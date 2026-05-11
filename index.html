@@ -474,6 +474,17 @@ function buildTeamsFromData(rawRows) {
     t.members.forEach(m => { personTeamMap[m.fn + '|' + m.ln] = ti; });
   });
   allPersonKeys = new Set([...Object.keys(personTeamMap), ...tlSet]);
+
+  // Compute display labels: use "F. LastName" only when the surname is shared
+  // by more than one team lead — keeps labels short but unambiguous.
+  // Future-proof: any new manager with a duplicate surname is handled automatically.
+  const lnCount = {};
+  TEAMS.forEach(t => { lnCount[t.tlLn] = (lnCount[t.tlLn] || 0) + 1; });
+  TEAMS.forEach(t => {
+    t.displayLabel = lnCount[t.tlLn] > 1
+      ? t.tlFn.charAt(0) + '. ' + t.tlLn
+      : t.tlLn;
+  });
 }
 
 // ─── FILE HANDLING ──────────────────────────────────────────────────────────
@@ -604,17 +615,21 @@ function buildTeamFilters() {
     update();
   });
   c.appendChild(all);
-  TEAMS.forEach((t, ti) => {
-    const b = btn(t.tlLn, false, '', () => {
-      activeTeams = new Set([ti]);
-      activePerson = null;
-      buildPersonFilters(ti);
-      syncTeamBtns(ti);
-      update();
+  // Sort alphabetically by surname (tlLn), not displayLabel — so "G. Aleksandrov"
+  // sorts under A, not G.
+  TEAMS.map((t, ti) => ({ t, ti }))
+    .sort((a, b) => a.t.tlLn.localeCompare(b.t.tlLn))
+    .forEach(({ t, ti }) => {
+      const b = btn(t.displayLabel, false, '', () => {
+        activeTeams = new Set([ti]);
+        activePerson = null;
+        buildPersonFilters(ti);
+        syncTeamBtns(ti);
+        update();
+      });
+      b.dataset.ti = ti;
+      c.appendChild(b);
     });
-    b.dataset.ti = ti;
-    c.appendChild(b);
-  });
 }
 
 function syncTeamBtns(activeTi) {
@@ -637,10 +652,10 @@ function buildPersonFilters(teamIdx) {
   // Show row
   document.getElementById('person-row').style.display = 'flex';
 
-  // "All" toggle
+  // "All" toggle — resets to no person filter
   const all = btn('All', true, 'all-active', () => {
     activePerson = null;
-    syncPersonBtns(null);
+    syncPersonBtns();
     update();
   });
   all.dataset.personAll = '1';
@@ -648,37 +663,46 @@ function buildPersonFilters(teamIdx) {
 
   // TL chip (blue accent)
   const tlKey = team.tlFn + '|' + team.tlLn;
-  const tlBtn = btn(team.tlLn + ' (TL)', false, '', () => {
-    activePerson = tlKey;
-    syncPersonBtns(tlKey);
-    update();
+  const tlBtn = btn(team.displayLabel + ' (TL)', false, '', () => {
+    togglePerson(tlKey);
   });
   tlBtn.dataset.personKey = tlKey;
   tlBtn.style.borderColor = 'rgba(79,142,247,0.3)';
   tlBtn.style.color = '#a8c7ff';
   c.appendChild(tlBtn);
 
-  // Each member
-  team.members.forEach(m => {
+  // Each member — sorted alphabetically by last name
+  [...team.members].sort((a, b) => a.ln.localeCompare(b.ln)).forEach(m => {
     const key = m.fn + '|' + m.ln;
     const label = m.fn.charAt(0) + '. ' + m.ln;
     const b = btn(label, false, '', () => {
-      activePerson = key;
-      syncPersonBtns(key);
-      update();
+      togglePerson(key);
     });
     b.dataset.personKey = key;
     c.appendChild(b);
   });
 }
 
-function syncPersonBtns(activeKey) {
+function togglePerson(key) {
+  if (!activePerson) {
+    activePerson = new Set([key]);
+  } else if (activePerson.has(key)) {
+    activePerson.delete(key);
+    if (activePerson.size === 0) activePerson = null;
+  } else {
+    activePerson.add(key);
+  }
+  syncPersonBtns();
+  update();
+}
+
+function syncPersonBtns() {
   document.querySelectorAll('#person-filters .f-btn').forEach(b => {
-    b.classList.remove('active','all-active');
+    b.classList.remove('active', 'all-active');
     if (b.dataset.personAll) {
-      if (activeKey === null) b.classList.add('all-active');
+      if (!activePerson) b.classList.add('all-active');
     } else if (b.dataset.personKey) {
-      if (b.dataset.personKey === activeKey) b.classList.add('active');
+      if (activePerson && activePerson.has(b.dataset.personKey)) b.classList.add('active');
     }
   });
 }
@@ -693,22 +717,38 @@ function btn(label, isActive, activeClass, onclick) {
 
 // ─── MAIN UPDATE ────────────────────────────────────────────────────────────
 function update() {
-  // Fix TL filtering + optional person filter
+  // ── Context-aware TL set ──────────────────────────────────────────────────
+  // "TL" means "lead of one of the CURRENTLY ACTIVE teams", not "TL ever".
+  // Example: when Pavlina's team is selected, Boris Tashkov is her *member*,
+  // not a TL — so he should appear in charts and averages like any other member.
+  const activeTLKeys = new Set(
+    TEAMS.filter((_, ti) => activeTeams.has(ti)).map(t => t.tlFn + '|' + t.tlLn)
+  );
+
+  // ── filteredFull ──────────────────────────────────────────────────────────
   const filteredFull = allData.filter(r => {
     if (!activeMonths.has(r.year * 100 + r.month)) return false;
-    // If a single person is selected, only their rows pass
-    if (activePerson && r.key !== activePerson) return false;
+    // Person filter: Set of selected keys, or null for "all"
+    if (activePerson) return activePerson.has(r.key);
+    // For absolute TLs (isTL from raw data): include if their own team is active
+    // OR if they are a member of an active team (e.g. a TL appearing under their director)
     if (r.isTL) {
       const tlTeamIdx = TEAMS.findIndex(t => t.tlFn + '|' + t.tlLn === r.key);
-      return activeTeams.has(tlTeamIdx);
+      return activeTeams.has(tlTeamIdx) || activeTeams.has(r.teamIdx);
     }
     return activeTeams.has(r.teamIdx);
   });
 
-  // Per person stats
+  // ── Per person stats ──────────────────────────────────────────────────────
   const personStats = {};
   for (const r of filteredFull) {
-    if (!personStats[r.key]) personStats[r.key] = { fn: r.fn, ln: r.ln, isTL: r.isTL, teamIdx: r.teamIdx, months: new Set(), ch: 0, vac: 0, hol: 0, adm: 0, trained: 0, trainer: 0 };
+    if (!personStats[r.key]) personStats[r.key] = {
+      fn: r.fn, ln: r.ln,
+      // Context-aware isTL: true only if this person leads one of the active teams
+      isTL: activeTLKeys.has(r.key),
+      teamIdx: r.teamIdx, months: new Set(),
+      ch: 0, vac: 0, hol: 0, adm: 0, trained: 0, trainer: 0
+    };
     const p = personStats[r.key];
     p.months.add(r.year * 100 + r.month);
     if (r.cat === 'Chargeable') p.ch += r.hours;
@@ -720,7 +760,6 @@ function update() {
   }
   for (const p of Object.values(personStats)) {
     p.cap = p.months.size * 160;
-    // Net Capacity removes both vacation AND company holidays (both are unavailable time)
     p.netCap = p.cap - p.vac - p.hol;
     p.free = p.netCap - p.ch;
     p.pct = p.netCap > 0 ? p.ch / p.netCap * 100 : 0;
@@ -730,7 +769,7 @@ function update() {
     p.fpd = wd > 0 ? p.free / wd : 0;
   }
 
-  // Calculate dynamic training thresholds: max(average among those trained, FLOOR)
+  // ── Dynamic training thresholds ───────────────────────────────────────────
   const traineesWithHours = Object.values(personStats).filter(p => !p.isTL && p.trained > 0);
   const trainersWithHours = Object.values(personStats).filter(p => !p.isTL && p.trainer > 0);
   const avgTrained = traineesWithHours.length > 0
@@ -740,11 +779,11 @@ function update() {
   dynamicThresholds.trainFloor = Math.max(avgTrained, TRAIN_FLOOR_HOURS);
   dynamicThresholds.coachFloor = Math.max(avgTrainer, COACH_FLOOR_HOURS);
 
-  // Monthly breakdown (excl TLs unless a TL is explicitly the selected person)
+  // ── Monthly breakdown (excl. context-TLs unless person is explicitly selected) ──
   const monthMap = {};
   for (const ym of [...activeMonths].sort()) monthMap[ym] = { ch: 0, vac: 0, hol: 0, netCap: 0, train: 0, people: new Set() };
   for (const r of filteredFull) {
-    if (r.isTL && !(activePerson && r.key === activePerson)) continue;
+    if (activeTLKeys.has(r.key) && !(activePerson && activePerson.has(r.key))) continue;
     const ym = r.year * 100 + r.month;
     if (!monthMap[ym]) continue;
     if (r.cat === 'Chargeable') monthMap[ym].ch += r.hours;
@@ -760,23 +799,9 @@ function update() {
     m.pct = m.netCap > 0 ? m.ch / m.netCap * 100 : 0;
   }
 
-  // Team summary (excl TLs)
+  // ── Team summary (excl. context-TLs) ─────────────────────────────────────
   const teamStats = {};
   TEAMS.forEach((t, ti) => { if (activeTeams.has(ti)) teamStats[ti] = { ch: 0, vac: 0, netCap: 0, people: new Set() }; });
-  for (const r of filteredFull) {
-    if (r.isTL || !activeTeams.has(r.teamIdx)) continue;
-    if (!teamStats[r.teamIdx]) continue;
-    if (r.cat === 'Chargeable') teamStats[r.teamIdx].ch += r.hours;
-    else if (r.cat === 'Vacation') teamStats[r.teamIdx].vac += r.hours;
-    teamStats[r.teamIdx].people.add(r.key);
-  }
-  for (const ts of Object.values(teamStats)) {
-    ts.n = ts.people.size;
-    ts.netCap = ts.n * 160 * (activeMonths.size) - ts.vac;
-    // recalc from person data
-    ts.netCap = 0; ts.ch = 0; ts.vac = 0;
-  }
-  // Redo from person stats
   for (const [key, p] of Object.entries(personStats)) {
     if (p.isTL || !activeTeams.has(p.teamIdx)) continue;
     if (!teamStats[p.teamIdx]) continue;
@@ -824,7 +849,7 @@ function updatePeriodBadge() {
 function updateKPIs(ps) {
   let ch=0, nc=0, free=0, vac=0, hol=0, wd=0, trained=0, trainer=0;
   for (const p of Object.values(ps)) {
-    if (p.isTL && !(activePerson && (p.fn + '|' + p.ln) === activePerson)) continue;
+    if (p.isTL && !(activePerson && activePerson.has(p.fn + '|' + p.ln))) continue;
     ch += p.ch; nc += p.netCap; free += p.free; vac += p.vac; hol += (p.hol||0); wd += p.wd;
     trained += p.trained || 0; trainer += p.trainer || 0;
   }
@@ -844,8 +869,12 @@ function updateKPIs(ps) {
   const sub = document.getElementById('k-charge-sub');
   if (sub) {
     if (activePerson) {
-      const [fn, ln] = activePerson.split('|');
-      sub.textContent = `${fn} ${ln} only`;
+      if (activePerson.size === 1) {
+        const [fn, ln] = [...activePerson][0].split('|');
+        sub.textContent = `${fn} ${ln} only`;
+      } else {
+        sub.textContent = `${activePerson.size} people selected`;
+      }
     } else {
       sub.textContent = 'selected teams excl. TL';
     }
@@ -870,7 +899,7 @@ function updateHeatGrid(ts) {
     cell.className = 'heat-cell';
     cell.style.setProperty('--c', col);
     cell.innerHTML = `<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${col};border-radius:3px 0 0 3px;"></div>
-      <div class="heat-cell-name">${t.tlLn}</div>
+      <div class="heat-cell-name">${t.displayLabel}</div>
       <div class="heat-cell-sub">${t.tlFn} · ${activePeople} people</div>
       <div class="heat-cell-pct" style="color:${col}">${pct.toFixed(1)}<span style="font-size:12px;color:var(--text2)">%</span></div>`;
     cell.onclick = () => {
@@ -966,7 +995,7 @@ function updateCharts(monthMap, teamStats, personStats) {
   charts['ch-teams'] = new Chart(document.getElementById('ch-teams'), {
     type: 'bar',
     data: {
-      labels: displayList.map(({ t, _separator }) => _separator ? t.tlLn : (t.tlFn.charAt(0) + '. ' + t.tlLn)),
+      labels: displayList.map(({ t, _separator }) => _separator ? t.tlLn : t.displayLabel),
       datasets: [{
         label: '%',
         data: displayList.map(({ s, _separator }) => _separator ? null : +((s.pct || 0).toFixed(1))),
