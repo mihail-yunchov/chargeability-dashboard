@@ -632,7 +632,7 @@ function processData(rows) {
     const isVac = /vacation/i.test(task);
     const isHoliday = /company holiday/i.test(task);
     // Authorised leave and illness reduce Net Capacity (like vacation)
-    const isLeave = !isVac && /(authoris|authoriz)ed?\s+leave|unpaid\s+leave|paid\s+leave|illness|sick\s+leave/i.test(task);
+    const isLeave = !isVac && /(authoris|authoriz)ed?\s+leave|unpaid\s+leave|paid\s+leave|illness|sick\s+leave|compassionate\s+leave|study\s+leave|parental\s+leave/i.test(task);
     // Office closure reduces capacity like company holiday
     const isOfficeClosure = /office\s+clos/i.test(task);
     // On bench as a task name is always non-chargeable regardless of project
