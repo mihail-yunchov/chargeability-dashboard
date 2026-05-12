@@ -405,6 +405,19 @@
 // No manual configuration required — when the org changes, the next CSV upload reflects it automatically.
 let TEAMS = [];
 
+// Dynamic working days — counts Mon–Fri in any given month/year.
+// No hardcoded table needed; works correctly for 2026, 2027, and beyond.
+function getWorkingDays(year, month) {
+  const days = new Date(year, month, 0).getDate();
+  let count = 0;
+  for (let d = 1; d <= days; d++) {
+    const day = new Date(year, month - 1, d).getDay();
+    if (day !== 0 && day !== 6) count++;
+  }
+  return count;
+}
+
+// Legacy lookup kept only as fallback if year/month are unknown
 const WORKING_DAYS = {1:23,2:20,3:21,4:22,5:22,6:21,7:23,8:22,9:22,10:23,11:20,12:22};
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -904,7 +917,7 @@ function update() {
     // Working days: calendar working days MINUS holiday and leave days
     // (those days the person wasn't available to work)
     let wd = 0;
-    for (const ym of p.months) wd += WORKING_DAYS[ym % 100] || 20;
+    for (const ym of p.months) wd += getWorkingDays(Math.floor(ym / 100), ym % 100);
     const offDays = Math.round((p.hol + p.leave) / 8); // convert hours to days
     p.wd = Math.max(wd - offDays, 1);  // at least 1 to avoid division by zero
     p.fpd = p.free / p.wd;
@@ -1333,7 +1346,7 @@ function updateMonTable(monthMap) {
   let html = '', totCh=0, totNc=0, totFr=0, totN=0, totFpd=0, totWd=0;
   for (const ym of yms) {
     const m = monthMap[ym], mo = ym%100, yr = Math.floor(ym/100);
-    const wd = WORKING_DAYS[mo] || 20;
+    const wd = getWorkingDays(yr, mo);
     const fpd = m.n > 0 && wd > 0 ? m.free / (m.n * wd) : 0;
     totCh += m.ch; totNc += m.netCap; totFr += m.free; totN += m.n; totFpd += fpd; totWd += m.n * wd;
     const barW = Math.min(m.pct, 100).toFixed(1);
