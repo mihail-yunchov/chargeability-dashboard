@@ -292,7 +292,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="card-title" style="margin-bottom:0;">Team overview — click to filter</div>
-        <span class="info-btn" onclick="showTip(this,'Team Overview','Each card shows one team (identified by TL name). The colour indicates chargeability level: <strong>green ≥65%</strong>, <strong>amber 50–64%</strong>, <strong>red &lt;50%</strong>.<br><br>Click any card to filter all charts and tables to that team only. Click <em>All teams</em> in the filter bar to reset.','Chargeability % = Chargeable hours ÷ Net Capacity × 100\nNet Capacity = (people × 160h) − Vacation hours')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Team Overview','Each card shows one team (identified by TL name). The colour indicates chargeability level: <strong>green ≥65%</strong>, <strong>amber 50–64%</strong>, <strong>red &lt;50%</strong>.<br><br>Only teams with ≥2 active people in the selected period are shown.<br><br>Click any card to add/remove that team from the selection. Click <em>All teams</em> to reset.','Chargeability % = Chargeable h ÷ Net Capacity × 100\nNet Capacity = (people × 160h) − Vacation − Company Holiday − Authorised/Sick Leave')">i</span>
       </div>
       <div class="legend">
         <span><span class="ldot" style="background:var(--green)"></span>≥65%</span>
@@ -308,7 +308,7 @@
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
         <div class="card-title" style="margin-bottom:0;">Monthly chargeability — selected teams avg</div>
-        <span class="info-btn" onclick="showTip(this,'Monthly Chargeability','Shows the average chargeability % per month for all selected teams (TLs excluded).<br><br>Use the <strong>Month</strong> filter to isolate a single month, or keep <em>All</em> for the full trend.<br><br>Colour coding: <strong>green ≥65%</strong>, <strong>amber 50–64%</strong>, <strong>red &lt;50%</strong>.','Formula per month:\nChargeability % = Σ Chargeable h ÷ Σ Net Capacity × 100\nNet Capacity = 160h − Vacation h per person')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Monthly Chargeability','Shows the average chargeability % per month for all selected teams (TLs excluded).<br><br>Use the <strong>Month</strong> filter to isolate a specific month or combination, or keep <em>All</em> for the full trend.<br><br>Colour coding: <strong>green ≥65%</strong>, <strong>amber 50–64%</strong>, <strong>red &lt;50%</strong>.','Formula per month:\nChargeability % = Σ Chargeable h ÷ Σ Net Capacity × 100\nNet Capacity = (people × 160h) − Vacation − Company Holiday − Authorised/Sick Leave')">i</span>
       </div>
       <div class="chart-wrap" style="height:210px;"><canvas id="ch-monthly"></canvas></div>
     </div>
@@ -327,14 +327,14 @@
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
         <div class="card-title" style="margin-bottom:0;">Hours breakdown — chargeable vs free time vs training vs vacation</div>
-        <span class="info-btn" onclick="showTip(this,'Hours Breakdown','Stacked bar showing how total logged hours are distributed each month across four categories:<br><br><strong>Chargeable</strong> — hours logged on active client projects (billable work).<br><strong>Free / Admin</strong> — hours logged as Admin, On Bench (GOH BG: 18-069151-01 / -02), or other non-chargeable time; includes meetings and idle time.<br><strong>Training</strong> — hours spent in training as trainee or trainer. Part of Free/Admin but visualised separately for clarity.<br><strong>Vacation</strong> — time off logged under tasks containing the word Vacation.','Total capacity = 160h × number of people\nFree / Admin = Net Capacity − Chargeable\n(does NOT include vacation in the free time pool)\nTraining is shown separately, NOT double-counted')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Hours Breakdown','Stacked bar showing how total logged hours are distributed each month across six categories:<br><br><strong>Chargeable</strong> — billable hours on client projects.<br><strong>Free / Admin</strong> — Admin project, On Bench (18-069151-01/02, 15-000000-01-01), or On bench task; includes meetings and idle time.<br><strong>Training</strong> — trainee (Virtual/Face-to-face training) or trainer (Activities as a trainer). Part of Free/Admin but shown separately.<br><strong>Holiday</strong> — Company holiday and Office closure tasks (reduce Net Capacity).<br><strong>Leave</strong> — Authorised/paid/sick leave (reduces Net Capacity, not Free Time).<br><strong>Vacation</strong> — tasks containing the word Vacation.','Net Capacity = 160h × people − Vacation − Holiday − Leave\nFree Time = Net Capacity − Chargeable\nTraining is part of Free/Admin, shown separately (NOT double-counted)\nLeave and Holiday reduce capacity — they do NOT appear in Free Time')">i</span>
       </div>
       <div class="chart-wrap" style="height:210px;"><canvas id="ch-breakdown"></canvas></div>
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
         <div class="card-title" style="margin-bottom:0;">Individual chargeability — selected team members</div>
-        <span class="info-btn" onclick="showTip(this,'Individual Chargeability','Horizontal bar chart showing chargeability % per person, sorted highest to lowest. The number of rows shown matches the size of the largest team in the dataset, so a single team can always fit fully.<br><br>A value <strong>above 100%</strong> means the person logged more chargeable hours than their net capacity — this is <strong>overtime</strong>. The data is accurate; it simply reflects more project hours than the standard monthly baseline allows.<br><br>TLs are excluded from this chart.','Formula per person:\nChargeability % = Chargeable h ÷ Net Capacity × 100\nNet Capacity = (months × 160h) − Vacation − Holiday\n\n>100% = Overtime (chargeable > net capacity)')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Individual Chargeability','Horizontal bar chart showing chargeability % per person, sorted highest to lowest. The number of rows shown matches the size of the largest team in the dataset.<br><br>A value <strong>above 100%</strong> means overtime — the person logged more chargeable hours than their net capacity.<br><br>TLs are excluded from this chart.','Formula per person:\nChargeability % = Chargeable h ÷ Net Capacity × 100\nNet Capacity = (months × 160h) − Vacation − Company Holiday − Authorised/Sick Leave\n\n>100% = Overtime (chargeable > net capacity)')">i</span>
       </div>
       <div class="chart-wrap" style="height:210px;"><canvas id="ch-individual"></canvas></div>
     </div>
@@ -345,7 +345,7 @@
     <div class="table-hdr">
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="table-title">Monthly summary (excl. TLs)</div>
-        <span class="info-btn" onclick="showTip(this,'Monthly Summary Table','Aggregated view of team performance per calendar month. TLs are excluded from all calculations.<br><br><strong>People</strong> — number of non-TL team members with logged hours in that month.<br><strong>Net Cap</strong> — total available hours (160h × people − vacation − holiday).<br><strong>Chargeable</strong> — total billable project hours.<br><strong>Chargeability %</strong> — team-level chargeability for the month.<br><strong>Free Time</strong> — total non-billable hours (admin + idle).<br><strong>Avg Free / Day / Person</strong> — free time spread across working days and people.','Net Capacity = (people × 160h) − Σ Vacation − Σ Holiday\nFree Time = Net Capacity − Chargeable h\nChargeability % = Chargeable ÷ Net Capacity × 100\nAvg Free/Day/Person = Free Time ÷ (people × working days)')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Monthly Summary Table','Aggregated view of team performance per calendar month. TLs are excluded from all calculations.<br><br><strong>People</strong> — non-TL members with logged hours that month.<br><strong>Net Cap</strong> — available hours after removing all time off.<br><strong>Chargeable</strong> — total billable project hours.<br><strong>Chargeability %</strong> — team-level chargeability for the month.<br><strong>Free Time</strong> — non-billable time (admin, idle, training, on bench).<br><strong>Avg Free / Day / Person</strong> — free time per person per actual working day.','Net Capacity = (people × 160h) − Σ Vacation − Σ Holiday − Σ Leave\nFree Time = Net Capacity − Chargeable h\nChargeability % = Chargeable ÷ Net Capacity × 100\nAvg Free/Day/Person = Free Time ÷ (people × actual working days)\nActual working days = calendar working days − holiday days − leave days')">i</span>
       </div>
     </div>
     <table>
@@ -365,7 +365,7 @@
     <div class="table-hdr">
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="table-title">Individual performance</div>
-        <span class="info-btn" onclick="showTip(this,'Individual Performance Table','One row per team member. Columns explained:<br><br><strong>Net Cap</strong> — available working hours after subtracting vacation and holidays (160h/month baseline).<br><strong>Chargeable</strong> — hours logged on client projects.<br><strong>Vacation</strong> — time-off hours logged in iTime.<br><strong>Free Time</strong> — Net Cap minus Chargeable. Includes admin tasks and unlogged time. Negative = overtime.<br><strong>Trained</strong> — hours spent in training as a trainee (Virtual training, Face-to-face training). Counted within Free Time, not Chargeable.<br><strong>Trainer</strong> — hours spent delivering training to others (Activities as a trainer). Counted within Free Time, not Chargeable.<br><strong>Chargeability %</strong> — how much of net capacity was spent on billable work.<br><strong>Free / Day</strong> — average free hours per working day in the period.<br><br><strong>Badges:</strong><br>OT = chargeability &gt;100% (overtime)<br>TRAIN = significant trainee hours (dynamic threshold)<br>COACH = significant trainer hours (dynamic threshold)','Net Capacity = (months × 160h) − Vacation − Holiday\nFree Time = Net Capacity − Chargeable h\nChargeability % = Chargeable ÷ Net Capacity × 100\nFree / Day = Free Time ÷ working days in period\n\nTrained / Trainer hours are part of Free Time,\nshown separately for context only.')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Individual Performance Table','One row per team member. Columns explained:<br><br><strong>Net Cap</strong> — available hours after removing all time off (vacation + holidays + authorised/sick leave).<br><strong>Chargeable</strong> — hours logged on client projects.<br><strong>Vacation</strong> — vacation hours (shown in Time Off KPI card).<br><strong>Free Time</strong> — Net Cap minus Chargeable. Includes admin, on bench, training, idle. Negative = overtime.<br><strong>Trained</strong> — hours as a trainee (Virtual/Face-to-face training). Part of Free Time, shown separately.<br><strong>Trainer</strong> — hours delivering training (Activities as a trainer). Part of Free Time, shown separately.<br><strong>Chargeability %</strong> — share of net capacity spent on billable work.<br><strong>Free / Day</strong> — average free hours per actual working day (holidays and leave days excluded from denominator).<br><br><strong>Badges: </strong>OT = overtime &gt;100% · TRAIN = significant trainee hours · COACH = significant trainer hours','Net Capacity = (months × 160h) − Vacation − Company Holiday − Authorised/Sick Leave\nFree Time = Net Capacity − Chargeable h\nChargeability % = Chargeable ÷ Net Capacity × 100\nFree / Day = Free Time ÷ (working days − holiday days − leave days)\n\nTrained / Trainer: part of Free Time, shown separately for context')">i</span>
       </div>
       <div class="legend">
         <span><span class="ldot" style="background:var(--green)"></span>High ≥65%</span>
@@ -396,7 +396,7 @@
     </table>
   </div>
 
-  <div class="footer-note">Capacity = 160 h/month · Net Capacity = 160 h − Vacation − Company Holiday · Free Time = Net Capacity − Chargeable · TLs excluded from averages · OT = chargeability &gt;100% · Teams auto-detected from Direct Manager column</div>
+  <div class="footer-note">Net Capacity = 160 h − Vacation − Company Holiday − Authorised/Sick Leave · Free Time = Net Capacity − Chargeable · Avg Free/Day excludes holiday and leave days · TLs excluded from averages · OT = chargeability &gt;100% · Teams auto-detected from Direct Manager column</div>
 </div>
 
 <script>
@@ -412,6 +412,7 @@ const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 const NON_CHARGEABLE_PROJECTS = new Set([
   '18-069151-01',  // GOH BG On Bench (variant 1)
   '18-069151-02',  // GOH BG On Bench (variant 2)
+  '15-000000-01-01', // Internal bench/leave project (On bench, Authorised leave, Office closure, Illness)
 ]);
 
 // Minimum direct reports for a manager to be treated as a real Team Lead
@@ -627,18 +628,26 @@ function processData(rows) {
     const d = new Date(dateStr);
     if (isNaN(d)) continue;
     const month = d.getMonth() + 1, year = d.getFullYear();
-    // Category detection
+    // Category detection — priority order matters
     const isVac = /vacation/i.test(task);
     const isHoliday = /company holiday/i.test(task);
+    // Authorised leave and illness reduce Net Capacity (like vacation)
+    const isLeave = !isVac && /(authoris|authoriz)ed?\s+leave|unpaid\s+leave|paid\s+leave|illness|sick\s+leave/i.test(task);
+    // Office closure reduces capacity like company holiday
+    const isOfficeClosure = /office\s+clos/i.test(task);
+    // On bench as a task name is always non-chargeable regardless of project
+    const isBenchTask = /^on\s+bench$/i.test(task);
     const isAdmin = proj.toLowerCase() === 'admin';
     const isOnBench = NON_CHARGEABLE_PROJECTS.has(proj);
     const isTrainer = /activities as a trainer/i.test(task);
-    const isTrainee = !isTrainer && /(virtual training|face-to-face.*train|in-person train)/i.test(task);
-    // Hierarchy: Vacation > Holiday > Admin/OnBench > Chargeable
+    const isTrainee = !isTrainer && /(virtual training|face-to-face.*train|in-person train|\btraining\b)/i.test(task);
+    // Hierarchy: Vacation > Leave > Holiday > OfficeClosure > Admin/OnBench/BenchTask > Chargeable
     let cat = 'Chargeable';
-    if (isVac) cat = 'Vacation';
-    else if (isHoliday) cat = 'Holiday';
-    else if (isAdmin || isOnBench) cat = 'Admin';
+    if (isVac)           cat = 'Vacation';
+    else if (isLeave)    cat = 'Leave';        // authorised/sick leave — reduces Net Cap
+    else if (isHoliday)  cat = 'Holiday';
+    else if (isOfficeClosure) cat = 'Holiday'; // office closure = same effect as holiday
+    else if (isAdmin || isOnBench || isBenchTask) cat = 'Admin';
     allData.push({ fn, ln, key, month, year, hours, cat, isTrainer, isTrainee, teamIdx: personTeamMap[key] ?? -1, isTL: tlSet.has(key) });
   }
 
@@ -710,24 +719,18 @@ function buildTeamFilters() {
     activeTeams = new Set(TEAMS.map((_,i)=>i));
     activePerson = null;
     hidePersonFilter();
-    syncTeamBtns(null);
+    syncTeamBtns();
     update();
   });
+  all.dataset.teamAll = '1';
   c.appendChild(all);
-  // Sort alphabetically by surname (tlLn), not displayLabel — so "G. Aleksandrov"
-  // sorts under A, not G.
   TEAMS.map((t, ti) => ({ t, ti }))
     .sort((a, b) => a.t.tlLn.localeCompare(b.t.tlLn))
     .forEach(({ t, ti }) => {
       const b = btn(t.displayLabel, false, '', () => {
-        activeTeams = new Set([ti]);
-        activePerson = null;
-        buildPersonFilters(ti);
-        syncTeamBtns(ti);
-        update();
+        toggleTeam(ti);
       });
       b.dataset.ti = ti;
-      // Append EXT badge for external teams (outsourcing)
       if (t.isExternal) {
         const extChip = document.createElement('span');
         extChip.className = 'ext-chip';
@@ -738,11 +741,39 @@ function buildTeamFilters() {
     });
 }
 
-function syncTeamBtns(activeTi) {
+function toggleTeam(ti) {
+  const allSelected = activeTeams.size === TEAMS.length;
+  if (allSelected) {
+    // First click after "All" → select only this team
+    activeTeams = new Set([ti]);
+  } else if (activeTeams.has(ti)) {
+    activeTeams.delete(ti);
+    if (activeTeams.size === 0) activeTeams = new Set(TEAMS.map((_,i)=>i)); // revert to all
+  } else {
+    activeTeams.add(ti);
+  }
+  // Person filter: only show if exactly one team selected
+  if (activeTeams.size === 1) {
+    const selectedTi = [...activeTeams][0];
+    activePerson = null;
+    buildPersonFilters(selectedTi);
+  } else {
+    activePerson = null;
+    hidePersonFilter();
+  }
+  syncTeamBtns();
+  update();
+}
+
+function syncTeamBtns() {
+  const allSelected = activeTeams.size === TEAMS.length;
   document.querySelectorAll('#team-filters .f-btn').forEach(b => {
-    b.classList.remove('active','all-active');
-    if (b.dataset.ti !== undefined) { if (parseInt(b.dataset.ti) === activeTi) b.classList.add('active'); }
-    else { if (activeTi === null) b.classList.add('all-active'); }
+    b.classList.remove('active', 'all-active');
+    if (b.dataset.teamAll) {
+      if (allSelected) b.classList.add('all-active');
+    } else if (b.dataset.ti !== undefined) {
+      if (!allSelected && activeTeams.has(parseInt(b.dataset.ti))) b.classList.add('active');
+    }
   });
 }
 
@@ -850,29 +881,33 @@ function update() {
   for (const r of filteredFull) {
     if (!personStats[r.key]) personStats[r.key] = {
       fn: r.fn, ln: r.ln,
-      // Context-aware isTL: true only if this person leads one of the active teams
       isTL: activeTLKeys.has(r.key),
       teamIdx: r.teamIdx, months: new Set(),
-      ch: 0, vac: 0, hol: 0, adm: 0, trained: 0, trainer: 0
+      ch: 0, vac: 0, hol: 0, leave: 0, adm: 0, trained: 0, trainer: 0
     };
     const p = personStats[r.key];
     p.months.add(r.year * 100 + r.month);
     if (r.cat === 'Chargeable') p.ch += r.hours;
     else if (r.cat === 'Vacation') p.vac += r.hours;
     else if (r.cat === 'Holiday') p.hol += r.hours;
+    else if (r.cat === 'Leave') p.leave += r.hours;  // authorised/sick leave
     else p.adm += r.hours;
     if (r.isTrainee) p.trained += r.hours;
     if (r.isTrainer) p.trainer += r.hours;
   }
   for (const p of Object.values(personStats)) {
     p.cap = p.months.size * 160;
-    p.netCap = p.cap - p.vac - p.hol;
+    // Net Capacity = Capacity − Vacation − Company Holidays − Authorised/Sick Leave
+    p.netCap = p.cap - p.vac - p.hol - p.leave;
     p.free = p.netCap - p.ch;
     p.pct = p.netCap > 0 ? p.ch / p.netCap * 100 : 0;
+    // Working days: calendar working days MINUS holiday and leave days
+    // (those days the person wasn't available to work)
     let wd = 0;
     for (const ym of p.months) wd += WORKING_DAYS[ym % 100] || 20;
-    p.wd = wd;
-    p.fpd = wd > 0 ? p.free / wd : 0;
+    const offDays = Math.round((p.hol + p.leave) / 8); // convert hours to days
+    p.wd = Math.max(wd - offDays, 1);  // at least 1 to avoid division by zero
+    p.fpd = p.free / p.wd;
   }
 
   // ── Dynamic training thresholds ───────────────────────────────────────────
@@ -887,7 +922,7 @@ function update() {
 
   // ── Monthly breakdown (excl. context-TLs unless person is explicitly selected) ──
   const monthMap = {};
-  for (const ym of [...activeMonths].sort()) monthMap[ym] = { ch: 0, vac: 0, hol: 0, netCap: 0, train: 0, people: new Set() };
+  for (const ym of [...activeMonths].sort()) monthMap[ym] = { ch: 0, vac: 0, hol: 0, leave: 0, netCap: 0, train: 0, people: new Set() };
   for (const r of filteredFull) {
     if (activeTLKeys.has(r.key) && !(activePerson && activePerson.has(r.key))) continue;
     const ym = r.year * 100 + r.month;
@@ -895,12 +930,13 @@ function update() {
     if (r.cat === 'Chargeable') monthMap[ym].ch += r.hours;
     else if (r.cat === 'Vacation') monthMap[ym].vac += r.hours;
     else if (r.cat === 'Holiday') monthMap[ym].hol += r.hours;
+    else if (r.cat === 'Leave') monthMap[ym].leave += r.hours;
     if (r.isTrainee || r.isTrainer) monthMap[ym].train += r.hours;
     monthMap[ym].people.add(r.key);
   }
   for (const m of Object.values(monthMap)) {
     m.n = m.people.size;
-    m.netCap = m.n * 160 - m.vac - m.hol;
+    m.netCap = m.n * 160 - m.vac - m.hol - m.leave;
     m.free = m.netCap - m.ch;
     m.pct = m.netCap > 0 ? m.ch / m.netCap * 100 : 0;
   }
@@ -953,10 +989,11 @@ function updatePeriodBadge() {
 }
 
 function updateKPIs(ps) {
-  let ch=0, nc=0, free=0, vac=0, hol=0, wd=0, trained=0, trainer=0;
+  let ch=0, nc=0, free=0, vac=0, hol=0, leave=0, wd=0, trained=0, trainer=0;
   for (const p of Object.values(ps)) {
     if (p.isTL && !(activePerson && activePerson.has(p.fn + '|' + p.ln))) continue;
-    ch += p.ch; nc += p.netCap; free += p.free; vac += p.vac; hol += (p.hol||0); wd += p.wd;
+    ch += p.ch; nc += p.netCap; free += p.free;
+    vac += p.vac; hol += (p.hol||0); leave += (p.leave||0); wd += p.wd;
     trained += p.trained || 0; trainer += p.trainer || 0;
   }
   const pct = nc > 0 ? ch/nc*100 : 0;
@@ -964,9 +1001,9 @@ function updateKPIs(ps) {
   document.getElementById('k-proj').innerHTML = Math.round(ch) + '<span> h</span>';
   document.getElementById('k-free').innerHTML = Math.round(free) + '<span> h</span>';
   document.getElementById('k-fpd').innerHTML = (wd > 0 ? free/wd : 0).toFixed(2) + '<span> h</span>';
-  document.getElementById('k-vac').innerHTML = Math.round(vac + hol) + '<span> h</span>';
+  document.getElementById('k-vac').innerHTML = Math.round(vac + hol + leave) + '<span> h</span>';
   const vacSub = document.getElementById('k-vac-sub');
-  if (vacSub) vacSub.textContent = `vacation ${Math.round(vac)}h · holiday ${Math.round(hol)}h`;
+  if (vacSub) vacSub.textContent = `vac ${Math.round(vac)}h · holiday ${Math.round(hol)}h · leave ${Math.round(leave)}h`;
 
   const totalTrain = trained + trainer;
   document.getElementById('k-train').innerHTML = Math.round(totalTrain) + '<span> h</span>';
@@ -992,6 +1029,17 @@ function bc(pct) { return pct >= 65 ? '#3ecf8e' : pct >= 50 ? '#f5a623' : '#f26b
 function updateHeatGrid(ts) {
   const g = document.getElementById('heat-grid');
   g.innerHTML = '';
+
+  // When all teams are selected (default state), hide the grid — it would be too cluttered.
+  // The user should select specific teams from the filter to see comparisons here.
+  const allSelected = activeTeams.size === TEAMS.length;
+  if (allSelected) {
+    g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px 24px;color:var(--text3);font-size:12px;font-family:var(--mono);">
+      Select one or more teams from the <strong style="color:var(--text2);">TEAM</strong> filter above to see the overview here.
+    </div>`;
+    return;
+  }
+
   let shown = 0;
   TEAMS.forEach((t, ti) => {
     if (!activeTeams.has(ti)) return;
@@ -1009,11 +1057,7 @@ function updateHeatGrid(ts) {
       <div class="heat-cell-name">${t.displayLabel}</div>
       <div class="heat-cell-sub">${t.tlFn} · ${activePeople} people</div>
       <div class="heat-cell-pct" style="color:${col}">${pct.toFixed(1)}<span style="font-size:12px;color:var(--text2)">%</span></div>`;
-    cell.onclick = () => {
-      activeTeams = new Set([ti]);
-      syncTeamBtns(ti);
-      update();
-    };
+    cell.onclick = () => toggleTeam(ti);
     g.appendChild(cell);
     shown++;
   });
@@ -1035,6 +1079,7 @@ function updateCharts(monthMap, teamStats, personStats) {
   const mFreeOther = yms.map(ym => Math.round((monthMap[ym].free||0) - (monthMap[ym].train||0)));
   const mVac = yms.map(ym => Math.round(monthMap[ym].vac||0));
   const mHol = yms.map(ym => Math.round(monthMap[ym].hol||0));
+  const mLeave = yms.map(ym => Math.round(monthMap[ym].leave||0));
 
   // Compute the Team Comparison height first, so Monthly chart can match it
   // (this requires deferring the actual chart creation to after we know the team count)
@@ -1133,6 +1178,7 @@ function updateCharts(monthMap, teamStats, personStats) {
         { label: 'Free / Admin', data: mFreeOther, backgroundColor: 'rgba(79,142,247,.5)', borderRadius: 3 },
         { label: 'Training', data: mTrain, backgroundColor: 'rgba(167,139,250,.6)', borderRadius: 3 },
         { label: 'Holiday', data: mHol, backgroundColor: 'rgba(220,38,38,.45)', borderRadius: 3 },
+        { label: 'Leave', data: mLeave, backgroundColor: 'rgba(251,146,60,.45)', borderRadius: 3 },
         { label: 'Vacation', data: mVac, backgroundColor: 'rgba(245,166,35,.5)', borderRadius: 3 },
       ]
     },
