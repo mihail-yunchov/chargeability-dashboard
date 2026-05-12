@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --bg: #0f1117; --bg2: #161820; --bg3: #1d1f2a; --bg4: #252838;
@@ -164,6 +165,15 @@
   .tag-ot { background: rgba(168,85,247,.12); color: #c084fc; border: 1px solid rgba(168,85,247,.3); }
   .tag-train { background: rgba(96,165,250,.12); color: #60a5fa; border: 1px solid rgba(96,165,250,.3); }
   .tag-coach { background: rgba(167,139,250,.12); color: #a78bfa; border: 1px solid rgba(167,139,250,.3); }
+  .tag-ext { background: rgba(251,146,60,.14); color: #fb923c; border: 1px solid rgba(251,146,60,.35); font-size: 9px; padding: 1px 5px; }
+  .ext-chip {
+    display: inline-block; font-size: 9px; font-weight: 600;
+    background: rgba(251,146,60,.14); color: #fb923c;
+    border: 1px solid rgba(251,146,60,.35);
+    padding: 1px 5px; border-radius: 4px; margin-left: 6px;
+    font-family: var(--mono); letter-spacing: .04em;
+    vertical-align: middle;
+  }
 
   /* ── TEAM HEAT GRID ── */
   .heat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
@@ -216,11 +226,11 @@
 
 <div id="upload-zone">
   <div class="upload-card" id="drop-zone">
-    <input type="file" id="file-input" accept=".csv">
+    <input type="file" id="file-input" accept=".csv,.xlsx,.xls">
     <div class="upload-icon">📂</div>
     <div class="upload-title">Drop your iTime export here</div>
-    <div class="upload-sub">Upload <strong>EmployeeTimeReport.csv</strong> from iTime.<br>All teams are auto-detected from the Direct Manager column.</div>
-    <div class="upload-hint">Auto-detect · Any hub · Any date range</div>
+    <div class="upload-sub">Upload <strong>EmployeeTimeReport</strong> from iTime (CSV or Excel).<br>All teams are auto-detected from the Direct Manager column.<br>External (outsourcing) teams are detected from sheet names.</div>
+    <div class="upload-hint">CSV · XLSX · Multi-tab supported</div>
   </div>
 </div>
 
@@ -428,27 +438,58 @@ let allPersonKeys = new Set();
 let dynamicThresholds = { trainFloor: TRAIN_FLOOR_HOURS, coachFloor: COACH_FLOOR_HOURS };
 
 // ─── BUILD TEAMS FROM CSV ───────────────────────────────────────────────────
+
+// Helper: tolerant column accessor — handles BOM, case variations, trim
+function getCol(row, ...names) {
+  for (const name of names) {
+    if (row[name] != null && row[name] !== '') return row[name];
+    // BOM-prefixed variant
+    const bomKey = '\ufeff' + name;
+    if (row[bomKey] != null && row[bomKey] !== '') return row[bomKey];
+  }
+  // Last resort: case-insensitive search across all keys
+  const lowerTargets = names.map(n => n.toLowerCase().trim());
+  for (const key of Object.keys(row)) {
+    const cleanKey = key.replace(/^\ufeff/, '').toLowerCase().trim();
+    if (lowerTargets.includes(cleanKey)) return row[key];
+  }
+  return '';
+}
+
 function buildTeamsFromData(rawRows) {
   // rawRows: parsed CSV rows with FName, LName, "Direct Manager" populated
   const mgrMap = {}; // "Mgr Full Name" -> Set("fn|ln")
-  const personFullNames = {}; // "fn|ln" -> "First Last" (for matching to manager names)
+  const personFullNames = {}; // "fn|ln" -> "First Last"
   const personManager = {}; // "fn|ln" -> "Mgr Full Name"
 
+  // Diagnostic: log first row's keys if we end up with no teams
+  if (rawRows.length > 0) {
+    console.log('[buildTeamsFromData] first row keys:', Object.keys(rawRows[0]));
+    console.log('[buildTeamsFromData] total rows:', rawRows.length);
+  }
+
+  // Track which source(s) contributed rows for each manager
+  const mgrSources = {}; // mgr -> Set of sources ('Internal','External')
   for (const row of rawRows) {
-    const fn = (row['FName'] || '').trim();
-    const ln = (row['LName'] || '').trim();
-    const mgr = (row['Direct Manager'] || '').trim();
+    const fn = String(getCol(row, 'FName', 'First Name', 'FirstName') || '').trim();
+    const ln = String(getCol(row, 'LName', 'Last Name', 'LastName') || '').trim();
+    const mgr = String(getCol(row, 'Direct Manager', 'DirectManager', 'Manager') || '').trim();
+    const src = row._source || 'Internal';
     if (!fn || !ln || !mgr) continue;
     const key = fn + '|' + ln;
     personFullNames[key] = fn + ' ' + ln;
     personManager[key] = mgr;
     if (!mgrMap[mgr]) mgrMap[mgr] = new Set();
     mgrMap[mgr].add(key);
+    if (!mgrSources[mgr]) mgrSources[mgr] = new Set();
+    mgrSources[mgr].add(src);
   }
+
+  console.log('[buildTeamsFromData] unique managers found:', Object.keys(mgrMap).length);
 
   // Build TEAMS array
   TEAMS = [];
-  const teamLookup = {}; // "Mgr Full Name" -> team index
+  const teamLookup = {};
   Object.entries(mgrMap)
     .filter(([_, members]) => members.size >= MIN_TEAM_SIZE)
     .sort((a, b) => a[0].localeCompare(b[0]))
@@ -463,7 +504,10 @@ function buildTeamsFromData(rawRows) {
       });
       members.sort((a, b) => a.ln.localeCompare(b.ln));
       teamLookup[mgrFullName] = TEAMS.length;
-      TEAMS.push({ tlFn, tlLn, label: mgrFullName, members });
+      // A team is External if ANY of its rows came from an External sheet
+      const sources = mgrSources[mgrFullName] || new Set(['Internal']);
+      const isExternal = sources.has('External');
+      TEAMS.push({ tlFn, tlLn, label: mgrFullName, members, isExternal });
     });
 
   // Build lookup maps
@@ -499,10 +543,64 @@ function triggerReload() {
 }
 
 function parseFile(file) {
+  const name = (file.name || '').toLowerCase();
+  if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+    parseXLSX(file);
+  } else {
+    parseCSV(file);
+  }
+}
+
+function parseCSV(file) {
   Papa.parse(file, {
-    header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
-    complete: r => processData(r.data)
+    header: true, skipEmptyLines: true,
+    transformHeader: h => h.trim().replace(/^\ufeff/, ''),
+    complete: r => {
+      // For CSV uploads, all rows are treated as Internal by default.
+      const rows = r.data.map(row => ({ ...row, _source: 'Internal' }));
+      processData(rows);
+    },
+    error: err => alert('Error reading CSV: ' + err.message)
   });
+}
+
+function parseXLSX(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array', cellDates: false });
+      // Read all sheets and tag each row with its source.
+      // Sheet name containing "outsourc", "extern", or "ext" -> External; otherwise Internal.
+      const allRows = [];
+      wb.SheetNames.forEach((sheetName, idx) => {
+        const sheet = wb.Sheets[sheetName];
+        const sheetRows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
+        const lower = sheetName.toLowerCase();
+        const isExt = /outsourc|extern|\bext\b/.test(lower);
+        sheetRows.forEach(row => {
+          // Trim all string values and tag with source
+          const cleaned = {};
+          Object.keys(row).forEach(k => {
+            const trimmedKey = k.trim();
+            cleaned[trimmedKey] = typeof row[k] === 'string' ? row[k].trim() : row[k];
+          });
+          cleaned._source = isExt ? 'External' : 'Internal';
+          cleaned._sheetName = sheetName;
+          allRows.push(cleaned);
+        });
+      });
+      if (allRows.length === 0) {
+        alert('No data rows found in the Excel file.');
+        return;
+      }
+      processData(allRows);
+    } catch (err) {
+      alert('Error reading Excel file: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 // ─── DATA PROCESSING ────────────────────────────────────────────────────────
@@ -510,21 +608,22 @@ function processData(rows) {
   // STEP 1: Build TEAMS dynamically from Direct Manager column
   buildTeamsFromData(rows);
   if (TEAMS.length === 0) {
-    alert('No teams could be detected.\nCheck that the CSV has a "Direct Manager" column populated.');
+    const sampleKeys = rows.length > 0 ? Object.keys(rows[0]).slice(0, 10).join(', ') : '(no rows)';
+    alert('No teams could be detected.\n\nCheck that the file has a "Direct Manager" column populated.\n\nDetected columns in first row:\n' + sampleKeys + '\n\nSee browser console (F12) for more diagnostic info.');
     return;
   }
 
   // STEP 2: Parse rows into allData
   allData = [];
   for (const row of rows) {
-    const fn = (row['FName'] || '').trim();
-    const ln = (row['LName'] || '').trim();
+    const fn = String(getCol(row, 'FName', 'First Name', 'FirstName') || '').trim();
+    const ln = String(getCol(row, 'LName', 'Last Name', 'LastName') || '').trim();
     const key = fn + '|' + ln;
     if (!allPersonKeys.has(key)) continue;
-    const dateStr = (row['Date'] || '').trim();
-    const proj = (row['Project #'] || '').trim();
-    const task = (row['Task'] || '').trim();
-    const hours = parseFloat(row['Hours'] || 0) || 0;
+    const dateStr = String(getCol(row, 'Date') || '').trim();
+    const proj = String(getCol(row, 'Project #', 'Project#', 'ProjectNumber') || '').trim();
+    const task = String(getCol(row, 'Task') || '').trim();
+    const hours = parseFloat(getCol(row, 'Hours') || 0) || 0;
     const d = new Date(dateStr);
     if (isNaN(d)) continue;
     const month = d.getMonth() + 1, year = d.getFullYear();
@@ -628,6 +727,13 @@ function buildTeamFilters() {
         update();
       });
       b.dataset.ti = ti;
+      // Append EXT badge for external teams (outsourcing)
+      if (t.isExternal) {
+        const extChip = document.createElement('span');
+        extChip.className = 'ext-chip';
+        extChip.textContent = 'EXT';
+        b.appendChild(extChip);
+      }
       c.appendChild(b);
     });
 }
@@ -899,6 +1005,7 @@ function updateHeatGrid(ts) {
     cell.className = 'heat-cell';
     cell.style.setProperty('--c', col);
     cell.innerHTML = `<div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${col};border-radius:3px 0 0 3px;"></div>
+      ${t.isExternal ? '<div style="position:absolute;top:6px;right:6px;font-family:var(--mono);font-size:8px;font-weight:600;color:#fb923c;background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.35);padding:1px 4px;border-radius:3px;letter-spacing:.04em;">EXT</div>' : ''}
       <div class="heat-cell-name">${t.displayLabel}</div>
       <div class="heat-cell-sub">${t.tlFn} · ${activePeople} people</div>
       <div class="heat-cell-pct" style="color:${col}">${pct.toFixed(1)}<span style="font-size:12px;color:var(--text2)">%</span></div>`;
@@ -1132,7 +1239,9 @@ function updateIndTable(ps) {
       tlSep = true;
     }
     const tlIdx = TEAMS.findIndex(t => t.tlFn + '|' + t.tlLn === p.fn + '|' + p.ln);
-    const teamLabel = p.isTL ? TEAMS[tlIdx]?.label || '' : TEAMS[p.teamIdx]?.label || '';
+    const teamObj = p.isTL ? TEAMS[tlIdx] : TEAMS[p.teamIdx];
+    const teamLabel = teamObj?.label || '';
+    const teamExt = teamObj?.isExternal ? '<span class="ext-chip">EXT</span>' : '';
     const barW = Math.min(p.pct, 100).toFixed(1);
 
     // Training cells — emphasized when significant
@@ -1152,7 +1261,7 @@ function updateIndTable(ps) {
 
     html += `<tr class="${p.isTL ? 'tl-row' : ''}">
       <td class="bold">${p.fn} ${p.ln}</td>
-      <td style="font-size:11px;color:var(--text2);">${teamLabel}</td>
+      <td style="font-size:11px;color:var(--text2);">${teamLabel}${teamExt}</td>
       <td class="mono">${Math.round(p.netCap)}</td>
       <td class="mono">${(Math.round(p.ch*10)/10).toFixed(1)}</td>
       <td class="mono">${Math.round(p.vac)}</td>
