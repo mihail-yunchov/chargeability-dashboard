@@ -292,7 +292,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="card-title" style="margin-bottom:0;">Team overview — click to filter</div>
-        <span class="info-btn" onclick="showTip(this,'Team Overview','Each card shows one team (identified by TL name). The colour indicates chargeability level: <strong>green ≥65%</strong>, <strong>amber 50–64%</strong>, <strong>red &lt;50%</strong>.<br><br>Only teams with ≥2 active people in the selected period are shown.<br><br>Click any card to add/remove that team from the selection. Click <em>All teams</em> to reset.','Chargeability % = Chargeable h ÷ Net Capacity × 100\nNet Capacity = (people × 160h) − Vacation − Company Holiday − Authorised/Sick Leave')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Team Overview','Each card shows one team (TL name, member count, chargeability %). Cards are sorted <strong>highest to lowest chargeability %</strong>.<br><br>The grid is <strong>hidden when All teams is selected</strong> — select one or more specific teams from the TEAM filter above to see cards here.<br><br>Only teams with ≥2 active people in the selected period are shown. Click any card to toggle that team in/out of the selection.','Chargeability % = Chargeable h ÷ Net Capacity × 100\nNet Capacity = (Mon–Fri days in period × 8h) − Vacation − Company Holiday − Leave')">i</span>
       </div>
       <div class="legend">
         <span><span class="ldot" style="background:var(--green)"></span>≥65%</span>
@@ -308,14 +308,14 @@
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
         <div class="card-title" style="margin-bottom:0;">Monthly chargeability — selected teams avg</div>
-        <span class="info-btn" onclick="showTip(this,'Monthly Chargeability','Shows the average chargeability % per month for all selected teams (TLs excluded).<br><br>Use the <strong>Month</strong> filter to isolate a specific month or combination, or keep <em>All</em> for the full trend.<br><br>Colour coding: <strong>green ≥65%</strong>, <strong>amber 50–64%</strong>, <strong>red &lt;50%</strong>.','Formula per month:\nChargeability % = Σ Chargeable h ÷ Σ Net Capacity × 100\nNet Capacity = (people × 160h) − Vacation − Company Holiday − Authorised/Sick Leave')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Monthly Chargeability','Average chargeability % per month for the selected teams (TLs excluded). Use the <strong>Month</strong> filter to multi-select specific months, or keep <em>All</em> for the full trend. Height matches Team Comparison chart for visual balance.<br><br>Colour: <strong>green ≥65%</strong> · <strong>amber 50–64%</strong> · <strong>red &lt;50%</strong>.','Formula per month:\nChargeability % = Σ Chargeable h ÷ Σ Net Capacity × 100\nNet Capacity = (Mon–Fri days in month × 8h) − Vacation − Company Holiday − Leave')">i</span>
       </div>
       <div class="chart-wrap" style="height:210px;"><canvas id="ch-monthly"></canvas></div>
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
         <div class="card-title" style="margin-bottom:0;">Team comparison — chargeability %</div>
-        <span class="info-btn" onclick="showTip(this,'Team Comparison','Compares chargeability % across selected teams for the chosen period.<br><br>Teams are sorted from highest to lowest. When more than 10 teams are visible, only the <strong>top 5</strong> and <strong>bottom 5</strong> are shown with a divider in between, so the chart stays readable.<br><br>Filtered to teams with ≥2 active people in the period.','Formula per team:\nChargeability % = Σ Chargeable h ÷ Σ Net Capacity × 100\n(aggregated across all active months)')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Team Comparison','Compares chargeability % across selected teams for the chosen period. Sorted highest to lowest.<br><br>Use the <strong>TEAM</strong> filter (multi-select) to choose specific teams to compare. When ≤10 teams visible: all shown. When &gt;10 teams: only top 5 + bottom 5 with a divider showing how many are hidden.<br><br>Only teams with ≥2 active people in the period are included.','Formula per team:\nChargeability % = Σ Chargeable h ÷ Σ Net Capacity × 100\nNet Capacity = (Mon–Fri days × 8h) − Vacation − Company Holiday − Leave\n(aggregated across all active months)')">i</span>
       </div>
       <div id="ch-teams-sub" style="font-size:10px;color:var(--text3);margin-bottom:10px;font-family:var(--mono);">&nbsp;</div>
       <div class="chart-wrap" style="height:210px;"><canvas id="ch-teams"></canvas></div>
@@ -327,14 +327,14 @@
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
         <div class="card-title" style="margin-bottom:0;">Hours breakdown — chargeable vs free time vs training vs vacation</div>
-        <span class="info-btn" onclick="showTip(this,'Hours Breakdown','Stacked bar showing how total logged hours are distributed each month across six categories:<br><br><strong>Chargeable</strong> — billable hours on client projects.<br><strong>Free / Admin</strong> — Admin project, On Bench (18-069151-01/02, 15-000000-01-01), or On bench task; includes meetings and idle time.<br><strong>Training</strong> — trainee (Virtual/Face-to-face training) or trainer (Activities as a trainer). Part of Free/Admin but shown separately.<br><strong>Holiday</strong> — Company holiday and Office closure tasks (reduce Net Capacity).<br><strong>Leave</strong> — Authorised/paid/sick leave (reduces Net Capacity, not Free Time).<br><strong>Vacation</strong> — tasks containing the word Vacation.','Net Capacity = 160h × people − Vacation − Holiday − Leave\nFree Time = Net Capacity − Chargeable\nTraining is part of Free/Admin, shown separately (NOT double-counted)\nLeave and Holiday reduce capacity — they do NOT appear in Free Time')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Hours Breakdown','Stacked bar showing how total logged hours are distributed each month across six categories:<br><br><strong>Chargeable</strong> — billable hours on client projects.<br><strong>Free / Admin</strong> — Admin project, On Bench (18-069151-01/02, 15-000000-01-01), or On bench task; includes meetings and idle time.<br><strong>Training</strong> — trainee (Virtual/Face-to-face training) or trainer (Activities as a trainer). Part of Free/Admin but shown separately.<br><strong>Holiday</strong> — Company holiday and Office closure tasks (reduce Net Capacity).<br><strong>Leave</strong> — Authorised/paid/sick leave (reduces Net Capacity, not Free Time).<br><strong>Vacation</strong> — tasks containing the word Vacation.','Net Capacity = (Mon–Fri days × 8h) − Vacation − Company Holiday − Leave\nFree Time = Net Capacity − Chargeable\nTraining is shown separately, NOT double-counted with Free/Admin\nHoliday and Leave reduce capacity — they appear as separate stacks, NOT in Free Time')">i</span>
       </div>
       <div class="chart-wrap" style="height:210px;"><canvas id="ch-breakdown"></canvas></div>
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
         <div class="card-title" style="margin-bottom:0;">Individual chargeability — selected team members</div>
-        <span class="info-btn" onclick="showTip(this,'Individual Chargeability','Horizontal bar chart showing chargeability % per person, sorted highest to lowest. The number of rows shown matches the size of the largest team in the dataset.<br><br>A value <strong>above 100%</strong> means overtime — the person logged more chargeable hours than their net capacity.<br><br>TLs are excluded from this chart.','Formula per person:\nChargeability % = Chargeable h ÷ Net Capacity × 100\nNet Capacity = (months × 160h) − Vacation − Company Holiday − Authorised/Sick Leave\n\n>100% = Overtime (chargeable > net capacity)')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Individual Chargeability','Horizontal bar chart showing chargeability % per person, sorted highest to lowest. The number of rows shown matches the size of the largest team in the dataset.<br><br>A value <strong>above 100%</strong> means overtime — the person logged more chargeable hours than their net capacity.<br><br>TLs are excluded from this chart.','Formula per person:\nChargeability % = Chargeable h ÷ Net Capacity × 100\nNet Capacity = (Mon–Fri days in period × 8h) − Vacation − Company Holiday − Leave\n\n>100% = Overtime (chargeable > net capacity)')">i</span>
       </div>
       <div class="chart-wrap" style="height:210px;"><canvas id="ch-individual"></canvas></div>
     </div>
@@ -345,7 +345,7 @@
     <div class="table-hdr">
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="table-title">Monthly summary (excl. TLs)</div>
-        <span class="info-btn" onclick="showTip(this,'Monthly Summary Table','Aggregated view of team performance per calendar month. TLs are excluded from all calculations.<br><br><strong>People</strong> — non-TL members with logged hours that month.<br><strong>Net Cap</strong> — available hours after removing all time off.<br><strong>Chargeable</strong> — total billable project hours.<br><strong>Chargeability %</strong> — team-level chargeability for the month.<br><strong>Free Time</strong> — non-billable time (admin, idle, training, on bench).<br><strong>Avg Free / Day / Person</strong> — free time per person per actual working day.','Net Capacity = (people × 160h) − Σ Vacation − Σ Holiday − Σ Leave\nFree Time = Net Capacity − Chargeable h\nChargeability % = Chargeable ÷ Net Capacity × 100\nAvg Free/Day/Person = Free Time ÷ (people × actual working days)\nActual working days = calendar working days − holiday days − leave days')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Monthly Summary Table','Aggregated view of team performance per calendar month. TLs are excluded from all calculations.<br><br><strong>People</strong> — non-TL members with logged hours that month.<br><strong>Net Cap</strong> — available hours after removing all time off.<br><strong>Chargeable</strong> — total billable project hours.<br><strong>Chargeability %</strong> — team-level chargeability for the month.<br><strong>Free Time</strong> — non-billable time (admin, idle, training, on bench).<br><strong>Avg Free / Day / Person</strong> — free time per person per actual working day.','Net Capacity = (Mon–Fri days in month × 8h × people) − Vacation − Company Holiday − Leave\nFree Time = Net Capacity − Chargeable h\nChargeability % = Chargeable ÷ Net Capacity × 100\nAvg Free/Day/Person = Free Time ÷ (people × actual working days)\nActual working days = Mon–Fri days − vacation days − holiday days − leave days')">i</span>
       </div>
     </div>
     <table>
@@ -365,7 +365,7 @@
     <div class="table-hdr">
       <div style="display:flex;align-items:center;gap:8px;">
         <div class="table-title">Individual performance</div>
-        <span class="info-btn" onclick="showTip(this,'Individual Performance Table','One row per team member. Columns explained:<br><br><strong>Net Cap</strong> — available hours after removing all time off (vacation + holidays + authorised/sick leave).<br><strong>Chargeable</strong> — hours logged on client projects.<br><strong>Vacation</strong> — vacation hours (shown in Time Off KPI card).<br><strong>Free Time</strong> — Net Cap minus Chargeable. Includes admin, on bench, training, idle. Negative = overtime.<br><strong>Trained</strong> — hours as a trainee (Virtual/Face-to-face training). Part of Free Time, shown separately.<br><strong>Trainer</strong> — hours delivering training (Activities as a trainer). Part of Free Time, shown separately.<br><strong>Chargeability %</strong> — share of net capacity spent on billable work.<br><strong>Free / Day</strong> — average free hours per actual working day (holidays and leave days excluded from denominator).<br><br><strong>Badges: </strong>OT = overtime &gt;100% · TRAIN = significant trainee hours · COACH = significant trainer hours','Net Capacity = (months × 160h) − Vacation − Company Holiday − Authorised/Sick Leave\nFree Time = Net Capacity − Chargeable h\nChargeability % = Chargeable ÷ Net Capacity × 100\nFree / Day = Free Time ÷ (working days − holiday days − leave days)\n\nTrained / Trainer: part of Free Time, shown separately for context')">i</span>
+        <span class="info-btn" onclick="showTip(this,'Individual Performance Table','One row per team member. Columns explained:<br><br><strong>Net Cap</strong> — available hours after removing all time off (vacation + holidays + authorised/sick leave).<br><strong>Chargeable</strong> — hours logged on client projects.<br><strong>Vacation</strong> — vacation hours (shown in Time Off KPI card).<br><strong>Free Time</strong> — Net Cap minus Chargeable. Includes admin, on bench, training, idle. Negative = overtime.<br><strong>Trained</strong> — hours as a trainee (Virtual/Face-to-face training). Part of Free Time, shown separately.<br><strong>Trainer</strong> — hours delivering training (Activities as a trainer). Part of Free Time, shown separately.<br><strong>Chargeability %</strong> — share of net capacity spent on billable work.<br><strong>Free / Day</strong> — average free hours per actual working day (holidays and leave days excluded from denominator).<br><br><strong>Badges: </strong>OT = overtime &gt;100% · TRAIN = significant trainee hours · COACH = significant trainer hours','Net Capacity = (Mon–Fri days in period × 8h) − Vacation − Company Holiday − Leave\nFree Time = Net Capacity − Chargeable h\nChargeability % = Chargeable ÷ Net Capacity × 100\nFree / Day = Free Time ÷ (Mon–Fri days − vacation days − holiday days − leave days)\n\nTrained / Trainer: part of Free Time, shown separately for context')">i</span>
       </div>
       <div class="legend">
         <span><span class="ldot" style="background:var(--green)"></span>High ≥65%</span>
@@ -1064,12 +1064,14 @@ function updateHeatGrid(ts) {
   }
 
   let shown = 0;
-  TEAMS.forEach((t, ti) => {
-    if (!activeTeams.has(ti)) return;
-    const s = ts[ti] || {};
+  // Sort by chargeability % descending — highest performers first
+  const sortedTeams = TEAMS
+    .map((t, ti) => ({ t, ti, s: ts[ti] || {} }))
+    .filter(({ ti, s }) => activeTeams.has(ti) && (s.n || 0) >= 2)
+    .sort((a, b) => (b.s.pct || 0) - (a.s.pct || 0));
+
+  sortedTeams.forEach(({ t, ti, s }) => {
     const activePeople = s.n || 0;
-    // Only display teams with at least 2 people who logged data in the selected period
-    if (activePeople < 2) return;
     const pct = s.pct || 0;
     const col = bc(pct);
     const cell = document.createElement('div');
