@@ -396,7 +396,7 @@
     </table>
   </div>
 
-  <div class="footer-note">Net Capacity = (Mon–Fri days in month × 8h) − Vacation − Authorised/Sick Leave · Company Holiday = non-chargeable overhead, does NOT reduce Net Cap · Free Time = Net Capacity − Chargeable · TLs excluded from averages · OT = chargeability &gt;100% · Teams auto-detected from Direct Manager column</div>
+  <div class="footer-note">Net Capacity = (Mon–Fri days × 8h) − Vacation − Company Holiday − Authorised/Sick Leave · Free Time = Net Capacity − Chargeable · Avg Free/Day excludes all absence days · TLs excluded from averages · OT = chargeability &gt;100% · Teams auto-detected from Direct Manager column</div>
 </div>
 
 <script>
@@ -915,16 +915,16 @@ function update() {
     for (const ym of p.months) {
       p.cap += getWorkingDays(Math.floor(ym / 100), ym % 100) * 8;
     }
-    // Net Capacity = Baseline − Vacation − Authorised/Sick Leave
-    // Company Holiday is NOT subtracted here: it is a company-wide overhead,
-    // not a personal absence. It stays visible in the Hours Breakdown chart.
-    p.netCap = p.cap - p.vac - p.leave;
+    // Net Capacity = Baseline − Vacation − Company Holiday − Authorised/Sick Leave
+    // Company Holiday reduces Net Cap: the employee was genuinely unavailable
+    // (even though it's a company decision, those hours cannot be billed to clients)
+    p.netCap = p.cap - p.vac - p.hol - p.leave;
     p.free = p.netCap - p.ch;
     p.pct = p.netCap > 0 ? p.ch / p.netCap * 100 : 0;
     // Avg Free/Day denominator = working days minus personal absence days only
     let wd = 0;
     for (const ym of p.months) wd += getWorkingDays(Math.floor(ym / 100), ym % 100);
-    const absentDays = Math.round((p.vac + p.leave) / 8);
+    const absentDays = Math.round((p.vac + p.hol + p.leave) / 8);
     p.wd = Math.max(wd - absentDays, 1);
     p.fpd = p.free / p.wd;
   }
@@ -959,7 +959,7 @@ function update() {
   for (const m of Object.values(monthMap)) {
     m.n = m.people.size;
     // Baseline = actual Mon–Fri days × 8h × people; subtract only personal absences
-    m.netCap = m.n * m.wd * 8 - m.vac - m.leave;
+    m.netCap = m.n * m.wd * 8 - m.vac - m.hol - m.leave;
     m.free = m.netCap - m.ch;
     m.pct = m.netCap > 0 ? m.ch / m.netCap * 100 : 0;
   }
@@ -1357,7 +1357,7 @@ function updateMonTable(monthMap) {
   for (const ym of yms) {
     const m = monthMap[ym], mo = ym%100, yr = Math.floor(ym/100);
     const wd = m.wd; // already computed at monthMap build
-    const absentDays = m.n > 0 ? Math.round((m.vac + m.leave) / (m.n * 8)) : 0;
+    const absentDays = m.n > 0 ? Math.round((m.vac + m.hol + m.leave) / (m.n * 8)) : 0;
     const actualWd = Math.max(wd - absentDays, 1);
     const fpd = m.n > 0 && actualWd > 0 ? m.free / (m.n * actualWd) : 0;
     totCh += m.ch; totNc += m.netCap; totFr += m.free; totN += m.n; totFpd += fpd; totWd += m.n * actualWd;
