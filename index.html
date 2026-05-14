@@ -1023,18 +1023,18 @@ function updateKPIs(ps) {
   }
   const pct = nc > 0 ? ch/nc*100 : 0;
   document.getElementById('k-charge').innerHTML = pct.toFixed(2) + '<span>%</span>';
-  document.getElementById('k-proj').innerHTML = Math.round(ch) + '<span> h</span>';
-  document.getElementById('k-free').innerHTML = Math.round(free) + '<span> h</span>';
+  document.getElementById('k-proj').innerHTML = (+ch).toFixed(2) + '<span> h</span>';
+  document.getElementById('k-free').innerHTML = (+free).toFixed(2) + '<span> h</span>';
   document.getElementById('k-fpd').innerHTML = (wd > 0 ? free/wd : 0).toFixed(2) + '<span> h</span>';
-  document.getElementById('k-vac').innerHTML = Math.round(vac + hol + leave) + '<span> h</span>';
+  document.getElementById('k-vac').innerHTML = (vac + hol + leave).toFixed(2) + '<span> h</span>';
   const vacSub = document.getElementById('k-vac-sub');
-  if (vacSub) vacSub.textContent = `vac ${Math.round(vac)}h · holiday ${Math.round(hol)}h · leave ${Math.round(leave)}h`;
+  if (vacSub) vacSub.textContent = `vac ${vac.toFixed(2)}h · holiday ${hol.toFixed(2)}h · leave ${leave.toFixed(2)}h`;
 
   const totalTrain = trained + trainer;
   // Effective utilization = (Chargeable + Training) / Net Cap — shows utilization if training counts as productive
   const effUtil = nc > 0 ? (ch + totalTrain) / nc * 100 : 0;
-  document.getElementById('k-train').innerHTML = Math.round(totalTrain) + '<span> h</span>';
-  document.getElementById('k-train-sub').textContent = `${effUtil.toFixed(2)}% incl. training · trained ${Math.round(trained)}h · trainer ${Math.round(trainer)}h`;
+  document.getElementById('k-train').innerHTML = (+totalTrain).toFixed(2) + '<span> h</span>';
+  document.getElementById('k-train-sub').textContent = `${effUtil.toFixed(2)}% incl. training · trained ${trained.toFixed(2)}h · trainer ${trainer.toFixed(2)}h`;
 
   const sub = document.getElementById('k-charge-sub');
   if (sub) {
@@ -1102,13 +1102,13 @@ function updateCharts(monthMap, teamStats, personStats) {
   const yms = Object.keys(monthMap).map(Number).sort();
   const mLabels = yms.map(ym => MONTH_NAMES[(ym%100)-1]);
   const mPcts = yms.map(ym => +(monthMap[ym].pct||0).toFixed(2));
-  const mCh = yms.map(ym => Math.round(monthMap[ym].ch||0));
-  const mTrain = yms.map(ym => Math.round(monthMap[ym].train||0));
+  const mCh = yms.map(ym => (monthMap[ym].ch||0));
+  const mTrain = yms.map(ym => (monthMap[ym].train||0));
   // Free / Admin = true idle time (training already excluded from m.free)
-  const mFreeOther = yms.map(ym => Math.round(monthMap[ym].free||0));
-  const mVac = yms.map(ym => Math.round(monthMap[ym].vac||0));
-  const mHol = yms.map(ym => Math.round(monthMap[ym].hol||0));
-  const mLeave = yms.map(ym => Math.round(monthMap[ym].leave||0));
+  const mFreeOther = yms.map(ym => (monthMap[ym].free||0));
+  const mVac = yms.map(ym => (monthMap[ym].vac||0));
+  const mHol = yms.map(ym => (monthMap[ym].hol||0));
+  const mLeave = yms.map(ym => (monthMap[ym].leave||0));
 
   // Compute the Team Comparison height first, so Monthly chart can match it
   // (this requires deferring the actual chart creation to after we know the team count)
@@ -1320,13 +1320,13 @@ function updateIndTable(ps) {
     const barW = Math.min(p.pct, 100).toFixed(1);
 
     // Training cells — emphasized when significant
-    const trainedH = Math.round(p.trained * 10) / 10;
-    const trainerH = Math.round(p.trainer * 10) / 10;
+    const trainedH = p.trained;
+    const trainerH = p.trainer;
     const trainedCell = trainedH > 0
-      ? `<td class="mono" style="color:#60a5fa;font-weight:500;">${trainedH.toFixed(1)}</td>`
+      ? `<td class="mono" style="color:#60a5fa;font-weight:500;">${trainedH.toFixed(2)}</td>`
       : `<td class="mono" style="color:var(--text3);">—</td>`;
     const trainerCell = trainerH > 0
-      ? `<td class="mono" style="color:#a78bfa;font-weight:500;">${trainerH.toFixed(1)}</td>`
+      ? `<td class="mono" style="color:#a78bfa;font-weight:500;">${trainerH.toFixed(2)}</td>`
       : `<td class="mono" style="color:var(--text3);">—</td>`;
 
     // Status badges — combine standard tag with optional Train/Coach badges
@@ -1337,10 +1337,10 @@ function updateIndTable(ps) {
     html += `<tr class="${p.isTL ? 'tl-row' : ''}">
       <td class="bold">${p.fn} ${p.ln}</td>
       <td style="font-size:11px;color:var(--text2);">${teamLabel}${teamExt}</td>
-      <td class="mono">${Math.round(p.netCap)}</td>
-      <td class="mono">${(Math.round(p.ch*10)/10).toFixed(1)}</td>
-      <td class="mono">${Math.round(p.vac)}</td>
-      <td class="mono">${(Math.round(p.free*10)/10).toFixed(1)}</td>
+      <td class="mono">${p.netCap.toFixed(2)}</td>
+      <td class="mono">${p.ch.toFixed(2)}</td>
+      <td class="mono">${p.vac.toFixed(2)}</td>
+      <td class="mono">${p.free.toFixed(2)}</td>
       ${trainedCell}
       ${trainerCell}
       <td>
@@ -1370,15 +1370,15 @@ function updateMonTable(monthMap) {
     html += `<tr>
       <td><span style="font-family:var(--mono);font-size:10px;background:var(--bg4);padding:2px 8px;border-radius:4px;">${MONTH_NAMES[mo-1]} ${yr}</span></td>
       <td class="mono">${m.n}</td>
-      <td class="mono">${Math.round(m.netCap)}</td>
-      <td class="mono">${(Math.round(m.ch*10)/10).toFixed(1)}</td>
+      <td class="mono">${m.netCap.toFixed(2)}</td>
+      <td class="mono">${m.ch.toFixed(2)}</td>
       <td>
         <div class="bar-wrap">
           <div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:${bc(m.pct)};"></div></div>
           <span class="pv" style="color:${bc(m.pct)}">${m.pct.toFixed(2)}%</span>
         </div>
       </td>
-      <td class="mono">${(Math.round(m.free*10)/10).toFixed(1)}</td>
+      <td class="mono">${m.free.toFixed(2)}</td>
       <td class="mono">${fpd.toFixed(2)} h</td>
     </tr>`;
   }
@@ -1390,15 +1390,15 @@ function updateMonTable(monthMap) {
     html += `<tr style="font-weight:500;background:var(--bg3);">
       <td style="font-size:10px;color:var(--text2);font-family:var(--mono);">Average</td>
       <td class="mono">${avgN}</td>
-      <td class="mono">${Math.round(totNc/yms.length)}</td>
-      <td class="mono">${(Math.round(totCh/yms.length*10)/10).toFixed(1)}</td>
+      <td class="mono">${(totNc/yms.length).toFixed(2)}</td>
+      <td class="mono">${(totCh/yms.length).toFixed(2)}</td>
       <td>
         <div class="bar-wrap">
           <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(ap,100).toFixed(2)}%;background:${bc(ap)};"></div></div>
           <span class="pv" style="color:${bc(ap)}">${ap.toFixed(2)}%</span>
         </div>
       </td>
-      <td class="mono">${(Math.round(totFr/yms.length*10)/10).toFixed(1)}</td>
+      <td class="mono">${(totFr/yms.length).toFixed(2)}</td>
       <td class="mono">${avgFpd.toFixed(2)} h</td>
     </tr>`;
   }
