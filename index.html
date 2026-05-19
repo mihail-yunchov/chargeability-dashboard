@@ -927,6 +927,13 @@ function update() {
     // Working days = Net Cap / 8h
     p.wd = Math.max(p.netCap / 8, 1);
     p.fpd = p.free / p.wd;
+    // OT detection: compare chargeable to contractual (Mon-Fri × 8h) capacity.
+    // With actual-logged model pct ≤ 100% always, so we use the standard baseline
+    // as the OT reference: if ch > contractual net cap → person worked overtime.
+    let stdCap = 0;
+    for (const ym of p.months) stdCap += getWorkingDays(Math.floor(ym / 100), ym % 100) * 8;
+    p.standardNetCap = Math.max(stdCap - p.vac - p.hol - p.leave, 0);
+    p.isOT = p.ch > p.standardNetCap;
   }
 
   // ── Dynamic training thresholds ───────────────────────────────────────────
@@ -1051,7 +1058,7 @@ function updateKPIs(ps) {
   }
 }
 
-function bc(pct) { return pct >= 65 ? '#3ecf8e' : pct >= 50 ? '#f5a623' : '#f26b6b'; }
+function bc(pct, isOT) { return isOT ? '#c084fc' : pct >= 65 ? '#3ecf8e' : pct >= 50 ? '#f5a623' : '#f26b6b'; }
 
 function updateHeatGrid(ts) {
   const g = document.getElementById('heat-grid');
@@ -1263,9 +1270,9 @@ function chartOpts(axis, tickFmt, min, max) {
   };
 }
 
-function tag(pct, isTL) {
+function tag(pct, isTL, isOT) {
   if (isTL) return '<span class="tag tag-tl">TL</span>';
-  if (pct > 100) return '<span class="tag tag-ot">OT</span>';
+  if (isOT) return '<span class="tag tag-ot">OT</span>';
   if (pct >= 65) return '<span class="tag tag-h">High</span>';
   if (pct >= 50) return '<span class="tag tag-m">Mid</span>';
   return '<span class="tag tag-l">Low</span>';
@@ -1330,7 +1337,7 @@ function updateIndTable(ps) {
       : `<td class="mono" style="color:var(--text3);">—</td>`;
 
     // Status badges — combine standard tag with optional Train/Coach badges
-    let badges = tag(p.pct, p.isTL);
+    let badges = tag(p.pct, p.isTL, p.isOT);
     if (trainedH >= dynamicThresholds.trainFloor) badges += ' <span class="tag tag-train">TRAIN</span>';
     if (trainerH >= dynamicThresholds.coachFloor) badges += ' <span class="tag tag-coach">COACH</span>';
 
@@ -1345,8 +1352,8 @@ function updateIndTable(ps) {
       ${trainerCell}
       <td>
         <div class="bar-wrap">
-          <div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:${bc(p.pct)};"></div></div>
-          <span class="pv" style="color:${bc(p.pct)}">${p.pct.toFixed(2)}%</span>
+          <div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:${bc(p.pct, p.isOT)};"></div></div>
+          <span class="pv" style="color:${bc(p.pct, p.isOT)}">${p.pct.toFixed(2)}%</span>
         </div>
       </td>
       <td class="mono">${p.fpd.toFixed(2)} h</td>
