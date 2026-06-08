@@ -86,7 +86,7 @@
   .team-search-input::placeholder { color: var(--text3); }
 
   /* ── KPI CARDS ── */
-  .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 20px; }
   .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); padding: 16px 18px; position: relative; overflow: hidden; }
   .kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
   .kpi.c-blue::before { background: linear-gradient(90deg,var(--accent),var(--accent2)); }
@@ -95,6 +95,7 @@
   .kpi.c-teal::before { background: var(--teal); }
   .kpi.c-red::before { background: var(--red); }
   .kpi.c-train::before { background: linear-gradient(90deg,#60a5fa,#a78bfa); }
+  .kpi.c-internal::before { background: #22d3ee; }
   .kpi-label { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
   .kpi-value { font-size: 28px; font-weight: 300; font-family: var(--mono); letter-spacing: -1px; }
   .kpi-value span { font-size: 14px; font-weight: 400; color: var(--text2); }
@@ -285,6 +286,11 @@
       <div class="kpi-value" id="k-train">—<span> h</span></div>
       <div class="kpi-sub" id="k-train-sub">trained · trainer</div>
     </div>
+    <div class="kpi c-internal">
+      <div class="kpi-label">Internal Projects</div>
+      <div class="kpi-value" id="k-internal">—<span> h</span></div>
+      <div class="kpi-sub" id="k-internal-sub">P-project hours</div>
+    </div>
   </div>
 
   <!-- TEAM HEAT MAP -->
@@ -367,13 +373,14 @@
         <div class="table-title">Individual performance</div>
         <span class="info-btn" onclick="showTip(this,'Individual Performance Table','One row per team member. Columns explained:<br><br><strong>Net Cap</strong> — available hours after removing all time off (vacation + holidays + authorised/sick leave).<br><strong>Chargeable</strong> — hours logged on client projects.<br><strong>Vacation</strong> — vacation hours (shown in Time Off KPI card).<br><strong>Free Time</strong> — Net Cap minus Chargeable. Includes admin, on bench, training, idle. Negative = overtime.<br><strong>Trained</strong> — hours as a trainee (Virtual/Face-to-face training). Part of Free Time, shown separately.<br><strong>Trainer</strong> — hours delivering training (Activities as a trainer). Part of Free Time, shown separately.<br><strong>Chargeability %</strong> — share of net capacity spent on billable work.<br><strong>Free / Day</strong> — average free hours per actual working day (holidays and leave days excluded from denominator).<br><br><strong>Badges: </strong>OT = overtime &gt;100% · TRAIN = significant trainee hours · COACH = significant trainer hours','Net Capacity = (Mon–Fri days in period × 8h) − Vacation − Company Holiday − Leave\nFree Time = Net Capacity − Chargeable h\nChargeability % = Chargeable ÷ Net Capacity × 100\nFree / Day = Free Time ÷ (Mon–Fri days − vacation days − holiday days − leave days)\n\nTrained / Trainer: part of Free Time, shown separately for context')">i</span>
       </div>
-      <div class="legend">
+      <div class="legend" style="font-size:10px;gap:8px;">
         <span><span class="ldot" style="background:var(--green)"></span>High ≥65%</span>
         <span><span class="ldot" style="background:var(--amber)"></span>Mid 50–64%</span>
         <span><span class="ldot" style="background:var(--red)"></span>Low &lt;50%</span>
         <span><span class="ldot" style="background:#c084fc"></span>OT &gt;100%</span>
         <span><span class="ldot" style="background:#60a5fa"></span>TRAIN</span>
         <span><span class="ldot" style="background:#a78bfa"></span>COACH</span>
+        <span><span class="ldot" style="background:#22d3ee"></span>Internal</span>
       </div>
     </div>
     <table>
@@ -387,6 +394,7 @@
           <th>Free Time (h)</th>
           <th>Trained (h)</th>
           <th>Trainer (h)</th>
+          <th>Internal (h)</th>
           <th>Chargeability %</th>
           <th>Free / Day</th>
           <th></th>
@@ -650,6 +658,8 @@ function processData(rows) {
     const isOfficeClosure = /office\s+clos/i.test(task);
     // On bench as a task name is always non-chargeable regardless of project
     const isBenchTask = /^on\s+bench$/i.test(task);
+    // All P-prefixed project numbers (e.g. P01900415, P26126154) are non-chargeable internal projects
+    const isPProject = /^P\d/i.test(proj);
     const isAdmin = proj.toLowerCase() === 'admin';
     const isOnBench = NON_CHARGEABLE_PROJECTS.has(proj);
     const isTrainer = /activities as a trainer/i.test(task);
@@ -661,6 +671,7 @@ function processData(rows) {
     else if (isHoliday)  cat = 'Holiday';
     else if (isOfficeClosure) cat = 'Holiday'; // office closure = same effect as holiday
     else if (isAdmin || isOnBench || isBenchTask) cat = 'Admin';
+    else if (isPProject) cat = 'Internal';
     allData.push({ fn, ln, key, month, year, hours, cat, isTrainer, isTrainee, teamIdx: personTeamMap[key] ?? -1, isTL: tlSet.has(key) });
   }
 
@@ -899,7 +910,7 @@ function update() {
       fn: r.fn, ln: r.ln,
       isTL: activeTLKeys.has(r.key),
       teamIdx: r.teamIdx, months: new Set(),
-      ch: 0, vac: 0, hol: 0, leave: 0, adm: 0, trained: 0, trainer: 0
+      ch: 0, vac: 0, hol: 0, leave: 0, adm: 0, internal: 0, trained: 0, trainer: 0
     };
     const p = personStats[r.key];
     p.months.add(r.year * 100 + r.month);
@@ -907,6 +918,7 @@ function update() {
     else if (r.cat === 'Vacation') p.vac += r.hours;
     else if (r.cat === 'Holiday') p.hol += r.hours;
     else if (r.cat === 'Leave') p.leave += r.hours;  // authorised/sick leave
+    else if (r.cat === 'Internal') p.internal += r.hours;
     else p.adm += r.hours;
     if (r.isTrainee) p.trained += r.hours;
     if (r.isTrainer) p.trainer += r.hours;
@@ -918,11 +930,11 @@ function update() {
     // (e.g. May data cut off mid-month — calendar would show full 22 days × 8h = 176h
     // while only 8 days of data exist; actual logged gives the right denominator).
     // For complete months with no overtime, result is identical to the standard model.
-    p.cap = p.ch + p.vac + p.hol + p.leave + p.adm;
+    p.cap = p.ch + p.vac + p.hol + p.leave + p.adm + p.internal;
     // Net Capacity = all logged hours − time off (= ch + adm)
     p.netCap = p.cap - p.vac - p.hol - p.leave;
-    // Free Time = non-billable non-training (pure admin/idle)
-    p.free = p.netCap - p.ch - p.trained - p.trainer;
+    // Free Time = non-billable non-training non-internal (pure idle/admin)
+    p.free = p.netCap - p.ch - p.trained - p.trainer - p.internal;
     p.pct = p.netCap > 0 ? p.ch / p.netCap * 100 : 0;
     // Working days = Net Cap / 8h
     p.wd = Math.max(p.netCap / 8, 1);
@@ -950,7 +962,7 @@ function update() {
   const monthMap = {};
   for (const ym of [...activeMonths].sort()) {
     const mo = ym % 100, yr = Math.floor(ym / 100);
-    monthMap[ym] = { ch: 0, vac: 0, hol: 0, leave: 0, adm: 0, netCap: 0, train: 0, people: new Set(), wd: getWorkingDays(yr, mo) };
+    monthMap[ym] = { ch: 0, vac: 0, hol: 0, leave: 0, adm: 0, internal: 0, netCap: 0, train: 0, people: new Set(), wd: getWorkingDays(yr, mo) };
   }
   for (const r of filteredFull) {
     if (activeTLKeys.has(r.key) && !(activePerson && activePerson.has(r.key))) continue;
@@ -960,6 +972,7 @@ function update() {
     else if (r.cat === 'Vacation') monthMap[ym].vac += r.hours;
     else if (r.cat === 'Holiday') monthMap[ym].hol += r.hours;
     else if (r.cat === 'Leave') monthMap[ym].leave += r.hours;
+    else if (r.cat === 'Internal') monthMap[ym].internal += r.hours;
     else monthMap[ym].adm += r.hours;  // Admin (includes training)
     if (r.isTrainee || r.isTrainer) monthMap[ym].train += r.hours;
     monthMap[ym].people.add(r.key);
@@ -967,9 +980,9 @@ function update() {
   for (const m of Object.values(monthMap)) {
     m.n = m.people.size;
     // Capacity = actual logged (handles partial months and overtime automatically)
-    m.cap = m.ch + m.vac + m.hol + m.leave + m.adm;
+    m.cap = m.ch + m.vac + m.hol + m.leave + m.adm + m.internal;
     m.netCap = m.cap - m.vac - m.hol - m.leave;  // = ch + adm
-    m.free = m.netCap - m.ch - m.train;  // pure admin (excl training)
+    m.free = m.netCap - m.ch - m.train - m.internal;  // pure admin (excl training and internal)
     m.pct = m.netCap > 0 ? m.ch / m.netCap * 100 : 0;
   }
 
@@ -1021,12 +1034,12 @@ function updatePeriodBadge() {
 }
 
 function updateKPIs(ps) {
-  let ch=0, nc=0, free=0, vac=0, hol=0, leave=0, wd=0, trained=0, trainer=0;
+  let ch=0, nc=0, free=0, vac=0, hol=0, leave=0, wd=0, trained=0, trainer=0, internalHrs=0;
   for (const p of Object.values(ps)) {
     if (p.isTL && !(activePerson && activePerson.has(p.fn + '|' + p.ln))) continue;
     ch += p.ch; nc += p.netCap; free += p.free;
     vac += p.vac; hol += (p.hol||0); leave += (p.leave||0); wd += p.wd;
-    trained += p.trained || 0; trainer += p.trainer || 0;
+    trained += p.trained || 0; trainer += p.trainer || 0; internalHrs += p.internal || 0;
   }
   const pct = nc > 0 ? ch/nc*100 : 0;
   document.getElementById('k-charge').innerHTML = pct.toFixed(2) + '<span>%</span>';
@@ -1042,6 +1055,8 @@ function updateKPIs(ps) {
   const effUtil = nc > 0 ? (ch + totalTrain) / nc * 100 : 0;
   document.getElementById('k-train').innerHTML = (+totalTrain).toFixed(2) + '<span> h</span>';
   document.getElementById('k-train-sub').textContent = `${effUtil.toFixed(2)}% incl. training · trained ${trained.toFixed(2)}h · trainer ${trainer.toFixed(2)}h`;
+  document.getElementById('k-internal').innerHTML = internalHrs.toFixed(2) + '<span> h</span>';
+  document.getElementById('k-internal-sub').textContent = 'P-project hours (non-billable)';
 
   const sub = document.getElementById('k-charge-sub');
   if (sub) {
@@ -1111,7 +1126,8 @@ function updateCharts(monthMap, teamStats, personStats) {
   const mPcts = yms.map(ym => +(monthMap[ym].pct||0).toFixed(2));
   const mCh = yms.map(ym => (monthMap[ym].ch||0));
   const mTrain = yms.map(ym => (monthMap[ym].train||0));
-  // Free / Admin = true idle time (training already excluded from m.free)
+  const mInternal = yms.map(ym => (monthMap[ym].internal||0));
+  // Free / Admin = true idle time (training and internal already excluded from m.free)
   const mFreeOther = yms.map(ym => (monthMap[ym].free||0));
   const mVac = yms.map(ym => (monthMap[ym].vac||0));
   const mHol = yms.map(ym => (monthMap[ym].hol||0));
@@ -1213,6 +1229,7 @@ function updateCharts(monthMap, teamStats, personStats) {
         { label: 'Chargeable', data: mCh, backgroundColor: 'rgba(62,207,142,.7)', borderRadius: 3 },
         { label: 'Free / Admin', data: mFreeOther, backgroundColor: 'rgba(79,142,247,.5)', borderRadius: 3 },
         { label: 'Training', data: mTrain, backgroundColor: 'rgba(167,139,250,.6)', borderRadius: 3 },
+        { label: 'Internal', data: mInternal, backgroundColor: 'rgba(34,211,238,.5)', borderRadius: 3 },
         { label: 'Holiday', data: mHol, backgroundColor: 'rgba(220,38,38,.45)', borderRadius: 3 },
         { label: 'Leave', data: mLeave, backgroundColor: 'rgba(251,146,60,.45)', borderRadius: 3 },
         { label: 'Vacation', data: mVac, backgroundColor: 'rgba(245,166,35,.5)', borderRadius: 3 },
@@ -1220,7 +1237,7 @@ function updateCharts(monthMap, teamStats, personStats) {
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: true, labels: { color: '#c2c4d0', font: { family: 'DM Mono', size: 11 }, boxWidth: 10, padding: 14 } } },
+      plugins: { legend: { display: true, labels: { color: '#c2c4d0', font: { family: 'DM Mono', size: 10 }, boxWidth: 8, padding: 10 } } },
       scales: {
         x: { stacked: true, ticks: { color: '#8e90a0', font: { family: 'DM Mono', size: 12 } }, grid: { color: 'rgba(255,255,255,.04)' } },
         y: { stacked: true, ticks: { color: '#8e90a0', font: { family: 'DM Mono', size: 12 } }, grid: { color: 'rgba(255,255,255,.04)' } }
@@ -1317,7 +1334,7 @@ function updateIndTable(ps) {
   let tlSep = false;
   for (const p of sorted) {
     if (p.isTL && !tlSep) {
-      html += `<tr><td colspan="11" style="padding:4px 18px;background:var(--bg3);font-size:10px;color:var(--text3);font-family:var(--mono);">— Team Leads (excluded from averages) —</td></tr>`;
+      html += `<tr><td colspan="12" style="padding:4px 18px;background:var(--bg3);font-size:10px;color:var(--text3);font-family:var(--mono);">— Team Leads (excluded from averages) —</td></tr>`;
       tlSep = true;
     }
     const tlIdx = TEAMS.findIndex(t => t.tlFn + '|' + t.tlLn === p.fn + '|' + p.ln);
@@ -1329,11 +1346,15 @@ function updateIndTable(ps) {
     // Training cells — emphasized when significant
     const trainedH = p.trained;
     const trainerH = p.trainer;
+    const internalH = p.internal || 0;
     const trainedCell = trainedH > 0
       ? `<td class="mono" style="color:#60a5fa;font-weight:500;">${trainedH.toFixed(2)}</td>`
       : `<td class="mono" style="color:var(--text3);">—</td>`;
     const trainerCell = trainerH > 0
       ? `<td class="mono" style="color:#a78bfa;font-weight:500;">${trainerH.toFixed(2)}</td>`
+      : `<td class="mono" style="color:var(--text3);">—</td>`;
+    const internalCell = internalH > 0
+      ? `<td class="mono" style="color:#22d3ee;font-weight:500;">${internalH.toFixed(2)}</td>`
       : `<td class="mono" style="color:var(--text3);">—</td>`;
 
     // Status badges — combine standard tag with optional Train/Coach badges
@@ -1350,6 +1371,7 @@ function updateIndTable(ps) {
       <td class="mono">${p.free.toFixed(2)}</td>
       ${trainedCell}
       ${trainerCell}
+      ${internalCell}
       <td>
         <div class="bar-wrap">
           <div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:${bc(p.pct, p.isOT)};"></div></div>
