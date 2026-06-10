@@ -4,24 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SD Hub Chargeability Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
-    /* Background layers — navy dark, matching efficiency dashboard */
-    --bg: #0e1320; --bg2: #141c2e; --bg3: #1a2338; --bg4: #1f2a40;
-    --border: #26334f; --border2: #364a6a;
+    /* Exact IIS Dashboard palette */
+    --bg: #0d1220; --bg2: #151e2e; --bg3: #1c2840; --bg4: #1f2d44;
+    --border: #233252; --border2: #2a3d58;
     /* Text */
-    --text: #dce3ef; --text2: #6b7f9e; --text3: #5a6a8a;
-    /* Accent colours — muted corporate, no neon */
-    --accent: #5b8dd9; --accent2: #7c6af5;
+    --text: #e2e8f0; --text2: #7a8fae; --text3: #506078;
+    /* Accent colours */
+    --accent: #5b8dd9; --accent2: #a855f7;
     --green: #5a9e72; --amber: #c9a84c; --red: #c96060; --teal: #22d3ee;
-    /* Fonts */
-    --font: 'Inter', system-ui, sans-serif;
+    /* Fonts — Inter only, like IIS dashboard */
+    --font: 'Inter', system-ui, -apple-system, sans-serif;
     --mono: 'DM Mono', monospace;
-    --display: 'Syne', sans-serif;
+    --display: 'Inter', system-ui, sans-serif;
     --r: 10px; --rl: 14px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,7 +31,8 @@
   .header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 16px 28px; border-bottom: 1px solid var(--border);
-    background: var(--bg2); position: sticky; top: 0; z-index: 100;
+    background: linear-gradient(180deg, var(--bg2) 0%, rgba(13,18,32,.95) 100%);
+    box-shadow: 0 2px 12px rgba(0,0,0,.2); position: sticky; top: 0; z-index: 100;
   }
   .logo-mark {
     width: 30px; height: 30px;
@@ -53,12 +54,18 @@
     justify-content: center; min-height: calc(100vh - 57px); padding: 40px;
   }
   .upload-card {
-    background: var(--bg2); border: 1.5px dashed var(--border2);
-    border-radius: var(--rl); padding: 48px 56px; text-align: center;
+    background: linear-gradient(145deg, rgba(91,141,217,.04) 0%, rgba(13,18,32,.6) 100%);
+    border: 1.5px dashed rgba(91,141,217,.35);
+    border-radius: 16px; padding: 52px 56px; text-align: center;
     max-width: 520px; width: 100%; cursor: pointer;
-    transition: border-color .2s, background .2s; position: relative;
+    transition: all .25s; position: relative;
   }
-  .upload-card:hover, .upload-card.drag-over { border-color: var(--accent); background: rgba(79,142,247,.05); }
+  .upload-card:hover, .upload-card.drag-over {
+    border-color: var(--accent);
+    background: linear-gradient(145deg, rgba(91,141,217,.1) 0%, rgba(91,141,217,.03) 100%);
+    box-shadow: 0 0 40px rgba(91,141,217,.1);
+    transform: translateY(-1px);
+  }
   .upload-icon { width: 48px; height: 48px; background: var(--bg4); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 20px; }
   .upload-title { font-size: 17px; font-weight: 500; margin-bottom: 8px; }
   .upload-sub { font-size: 13px; color: var(--text2); line-height: 1.6; }
@@ -93,7 +100,7 @@
 
   /* ── KPI CARDS ── */
   .kpi-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 20px; }
-  .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); padding: 18px 20px; position: relative; overflow: hidden; transition: border-color .2s; }
+  .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); padding: 18px 20px; position: relative; overflow: hidden; transition: border-color .2s; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
   .kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
   .kpi.c-blue::before { background: linear-gradient(90deg,var(--accent),var(--accent2)); }
   .kpi.c-green::before { background: var(--green); }
@@ -103,20 +110,20 @@
   .kpi.c-train::before { background: linear-gradient(90deg,#60a5fa,#a78bfa); }
   .kpi.c-internal::before { background: #22d3ee; }
   .kpi-label { font-size: 10px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 8px; font-family: var(--font); }
-  .kpi-value { font-size: 28px; font-weight: 400; font-family: var(--mono); letter-spacing: -0.5px; line-height: 1; }
+  .kpi-value { font-size: 27px; font-weight: 700; font-family: var(--display); letter-spacing: -0.5px; line-height: 1; font-variant-numeric: tabular-nums; }
   .kpi-value span { font-size: 14px; font-weight: 400; color: var(--text2); font-family: var(--font); }
   .kpi-sub { font-size: 10px; color: var(--text2); margin-top: 5px; line-height: 1.4; }
 
   /* ── CHART GRID ── */
   .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
   .chart-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); padding: 18px 20px; }
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); padding: 18px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
   .card-full { grid-column: 1 / -1; }
   .card-title { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 14px; }
   .chart-wrap { position: relative; }
 
   /* ── TABLES ── */
-  .table-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); overflow: hidden; margin-bottom: 20px; }
+  .table-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); overflow: hidden; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
   .table-hdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
   .table-title { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; }
   table { width: 100%; border-collapse: collapse; }
