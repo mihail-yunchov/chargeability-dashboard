@@ -4,22 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SD Hub Chargeability Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
-    --bg: #0f1117; --bg2: #161820; --bg3: #1d1f2a; --bg4: #252838;
-    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
-    --text: #e8e9f0; --text2: #8e90a0; --text3: #4e5060;
-    --accent: #4f8ef7; --accent2: #7c6af5;
-    --green: #3ecf8e; --amber: #f5a623; --red: #f26b6b; --teal: #2dd4bf;
-    --font: 'DM Sans', sans-serif; --mono: 'DM Mono', monospace;
+    /* Background layers — navy dark, matching efficiency dashboard */
+    --bg: #0e1320; --bg2: #141c2e; --bg3: #1a2338; --bg4: #1f2a40;
+    --border: #26334f; --border2: #364a6a;
+    /* Text */
+    --text: #dce3ef; --text2: #6b7f9e; --text3: #5a6a8a;
+    /* Accent colours — muted corporate, no neon */
+    --accent: #5b8dd9; --accent2: #7c6af5;
+    --green: #5a9e72; --amber: #c9a84c; --red: #c96060; --teal: #22d3ee;
+    /* Fonts */
+    --font: 'Inter', system-ui, sans-serif;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
     --r: 10px; --rl: 14px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.5; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 
   /* ── HEADER ── */
   .header {
@@ -33,7 +39,7 @@
     border-radius: 7px; display: flex; align-items: center; justify-content: center;
     font-size: 13px; font-weight: 600; color: #fff;
   }
-  .header-title { font-size: 14px; font-weight: 500; }
+  .header-title { font-size: 14px; font-weight: 600; font-family: var(--display); }
   .header-sub { font-size: 11px; color: var(--text2); }
   .period-badge {
     font-family: var(--mono); font-size: 11px;
@@ -65,7 +71,7 @@
   /* ── FILTER BAR ── */
   .filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
   .filter-sep { width: 1px; height: 20px; background: var(--border2); margin: 0 4px; }
-  .filter-label { font-size: 13px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+  .filter-label { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 1.4px; white-space: nowrap; font-family: var(--font); }
   .f-btn {
     font-family: var(--mono); font-size: 13px; padding: 5px 14px;
     background: var(--bg3); border: 1px solid var(--border);
@@ -87,7 +93,7 @@
 
   /* ── KPI CARDS ── */
   .kpi-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin-bottom: 20px; }
-  .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); padding: 16px 18px; position: relative; overflow: hidden; }
+  .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); padding: 18px 20px; position: relative; overflow: hidden; transition: border-color .2s; }
   .kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
   .kpi.c-blue::before { background: linear-gradient(90deg,var(--accent),var(--accent2)); }
   .kpi.c-green::before { background: var(--green); }
@@ -96,10 +102,10 @@
   .kpi.c-red::before { background: var(--red); }
   .kpi.c-train::before { background: linear-gradient(90deg,#60a5fa,#a78bfa); }
   .kpi.c-internal::before { background: #22d3ee; }
-  .kpi-label { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
-  .kpi-value { font-size: 28px; font-weight: 300; font-family: var(--mono); letter-spacing: -1px; }
-  .kpi-value span { font-size: 14px; font-weight: 400; color: var(--text2); }
-  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .kpi-label { font-size: 10px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 8px; font-family: var(--font); }
+  .kpi-value { font-size: 28px; font-weight: 400; font-family: var(--mono); letter-spacing: -0.5px; line-height: 1; }
+  .kpi-value span { font-size: 14px; font-weight: 400; color: var(--text2); font-family: var(--font); }
+  .kpi-sub { font-size: 10px; color: var(--text2); margin-top: 5px; line-height: 1.4; }
 
   /* ── CHART GRID ── */
   .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
@@ -114,7 +120,7 @@
   .table-hdr { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
   .table-title { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; }
   table { width: 100%; border-collapse: collapse; }
-  thead th { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; padding: 9px 18px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg3); white-space: nowrap; }
+  thead th { font-size: 10px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 1.2px; padding: 9px 18px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg3); white-space: nowrap; }
   tbody td { padding: 10px 18px; font-size: 13px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover td { background: rgba(255,255,255,.02); }
@@ -159,10 +165,10 @@
 
   /* ── TAGS ── */
   .tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; font-family: var(--mono); text-transform: uppercase; letter-spacing: .03em; }
-  .tag-h { background: rgba(62,207,142,.12); color: var(--green); border: 1px solid rgba(62,207,142,.25); }
-  .tag-m { background: rgba(245,166,35,.12); color: var(--amber); border: 1px solid rgba(245,166,35,.25); }
-  .tag-l { background: rgba(242,107,107,.12); color: var(--red); border: 1px solid rgba(242,107,107,.25); }
-  .tag-tl { background: rgba(79,142,247,.1); color: var(--accent); border: 1px solid rgba(79,142,247,.25); }
+  .tag-h { background: rgba(90,158,114,.15); color: var(--green); border: 1px solid rgba(90,158,114,.3); }
+  .tag-m { background: rgba(201,168,76,.12); color: var(--amber); border: 1px solid rgba(201,168,76,.3); }
+  .tag-l { background: rgba(201,96,96,.12); color: var(--red); border: 1px solid rgba(201,96,96,.3); }
+  .tag-tl { background: rgba(91,141,217,.12); color: var(--accent); border: 1px solid rgba(91,141,217,.3); }
   .tag-ot { background: rgba(168,85,247,.12); color: #c084fc; border: 1px solid rgba(168,85,247,.3); }
   .tag-train { background: rgba(96,165,250,.12); color: #60a5fa; border: 1px solid rgba(96,165,250,.3); }
   .tag-coach { background: rgba(167,139,250,.12); color: #a78bfa; border: 1px solid rgba(167,139,250,.3); }
@@ -188,16 +194,16 @@
   .heat-cell::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px 0 0 3px; }
   .heat-cell-name { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
   .heat-cell-sub { font-size: 11px; color: var(--text2); }
-  .heat-cell-pct { font-family: var(--mono); font-size: 20px; font-weight: 300; margin-top: 6px; }
+  .heat-cell-pct { font-family: var(--display); font-size: 22px; font-weight: 700; margin-top: 6px; }
 
   .legend { display: flex; gap: 14px; align-items: center; font-size: 11px; color: var(--text2); }
   .ldot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; }
 
-  .footer-note { font-size: 11px; color: var(--text3); text-align: center; padding: 8px; font-family: var(--mono); }
+  .footer-note { font-size: 11px; color: var(--text2); text-align: center; padding: 8px; font-family: var(--mono); opacity: 0.6; }
 
   .section-sep { display: flex; align-items: center; gap: 10px; margin: 20px 0 14px; }
   .section-sep-line { flex: 1; height: 1px; background: var(--border); }
-  .section-sep-text { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+  .section-sep-text { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 1.2px; white-space: nowrap; font-family: var(--font); }
 
   @media (max-width: 1000px) {
     .kpi-row { grid-template-columns: repeat(3, 1fr); }
@@ -1073,7 +1079,7 @@ function updateKPIs(ps) {
   }
 }
 
-function bc(pct, isOT) { return isOT ? '#c084fc' : pct >= 65 ? '#3ecf8e' : pct >= 50 ? '#f5a623' : '#f26b6b'; }
+function bc(pct, isOT) { return isOT ? '#c084fc' : pct >= 65 ? '#5a9e72' : pct >= 50 ? '#c9a84c' : '#c96060'; }
 
 function updateHeatGrid(ts) {
   const g = document.getElementById('heat-grid');
@@ -1213,8 +1219,8 @@ function updateCharts(monthMap, teamStats, personStats) {
       indexAxis: 'y',
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.x === null ? '' : ' ' + ctx.parsed.x + '%' }, filter: ctx => ctx.parsed.x !== null } },
       scales: {
-        x: { min: 0, max: 100, ticks: { color: '#8e90a0', font: { family: 'DM Mono', size: 12 }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,.04)' } },
-        y: { ticks: { color: '#c2c4d0', font: { family: 'DM Mono', size: 12 } }, grid: { color: 'rgba(255,255,255,.04)' } }
+        x: { min: 0, max: 100, ticks: { color: '#6b7f9e', font: { family: 'DM Mono', size: 12 }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: { ticks: { color: '#dce3ef', font: { family: 'DM Mono', size: 12 } }, grid: { color: 'rgba(255,255,255,.04)' } }
       }
     }
   });
