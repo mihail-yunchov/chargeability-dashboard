@@ -487,11 +487,16 @@ function getCol(row, ...names) {
   return '';
 }
 
+// Normalize any casing variant to Title Case: "RADNEVA YOANA" → "Radneva Yoana"
+function toTitleCase(str) {
+  return str.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+}
+
 function buildTeamsFromData(rawRows) {
   // rawRows: parsed CSV rows with FName, LName, "Direct Manager" populated
   const mgrMap = {}; // "Mgr Full Name" -> Set("fn|ln")
   const personFullNames = {}; // "fn|ln" -> "First Last"
-  const personManager = {}; // "fn|ln" -> "Mgr Full Name"
+  const personManager = {}; // "fn|ln" -> "Mgr Full Name" (normalized)
 
   // Diagnostic: log first row's keys if we end up with no teams
   if (rawRows.length > 0) {
@@ -502,9 +507,11 @@ function buildTeamsFromData(rawRows) {
   // Track which source(s) contributed rows for each manager
   const mgrSources = {}; // mgr -> Set of sources ('Internal','External')
   for (const row of rawRows) {
-    const fn = String(getCol(row, 'FName', 'First Name', 'FirstName') || '').trim();
-    const ln = String(getCol(row, 'LName', 'Last Name', 'LastName') || '').trim();
-    const mgr = String(getCol(row, 'Direct Manager', 'DirectManager', 'Manager') || '').trim();
+    const fn = toTitleCase(String(getCol(row, 'FName', 'First Name', 'FirstName') || '').trim());
+    const ln = toTitleCase(String(getCol(row, 'LName', 'Last Name', 'LastName') || '').trim());
+    const mgrRaw = String(getCol(row, 'Direct Manager', 'DirectManager', 'Manager') || '').trim();
+    // Normalize manager name to Title Case so "RADNEVA YOANA" and "Radneva Yoana" merge
+    const mgr = toTitleCase(mgrRaw);
     const src = row._source || 'Internal';
     if (!fn || !ln || !mgr) continue;
     const key = fn + '|' + ln;
@@ -698,8 +705,8 @@ function processData(rows) {
   // STEP 2: Parse rows into allData
   allData = [];
   for (const row of rows) {
-    const fn = String(getCol(row, 'FName', 'First Name', 'FirstName') || '').trim();
-    const ln = String(getCol(row, 'LName', 'Last Name', 'LastName') || '').trim();
+    const fn = toTitleCase(String(getCol(row, 'FName', 'First Name', 'FirstName') || '').trim());
+    const ln = toTitleCase(String(getCol(row, 'LName', 'Last Name', 'LastName') || '').trim());
     const key = fn + '|' + ln;
     if (!allPersonKeys.has(key)) continue;
     const dateStr = String(getCol(row, 'Date') || '').trim();
