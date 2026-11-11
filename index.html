@@ -238,6 +238,7 @@
 <div id="tooltip-box" class="tooltip-box"></div>
 
 <div id="dashboard">
+  <div id="merge-notice" style="display:none;margin:0 0 12px;padding:8px 12px;border:1px solid rgba(96,165,250,.35);background:rgba(96,165,250,.08);border-radius:8px;font-size:12px;color:#9db8e8;"></div>
 
   <!-- FILTER BAR -->
   <div class="filter-bar">
@@ -492,6 +493,71 @@ function toTitleCase(str) {
   return str.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
 
+// ─── PEOPLE CONSOLIDATION (Outsourcing → Ipsos moves) ──────────────────────
+// Manual overrides for edge cases the auto-detection cannot catch.
+// Format: 'Old First|Last' : 'Canonical First|Last'  (Title Case)
+const NAME_ALIASES = {
+  // 'Jamal|Al Badarin': 'Dzhamal|Al Badarin',
+};
+
+// Returns [fn, ln] for a row after normalization + consolidation.
+function rowName(row) {
+  if (row._fn !== undefined) return [row._fn, row._ln];
+  return [
+    toTitleCase(String(getCol(row, 'FName', 'First Name', 'FirstName') || '').trim()),
+    toTitleCase(String(getCol(row, 'LName', 'Last Name', 'LastName') || '').trim())
+  ];
+}
+
+// People who moved from an external vendor (Outsourcing sheet) to Ipsos get a new
+// Employee ID and sometimes a different spelling. Detect them and merge under ONE name:
+//   same surname + same manager + earlier rows External-only + later rows Internal-only
+//   + the two periods do not overlap (gap <= 31 days).
+// The Internal spelling wins, because that is the one that stays going forward.
+function consolidatePeople(rows) {
+  const stats = {}; // "fn|ln" -> { fn, ln, mgrs:Set, min, max, src:Set }
+  rows.forEach(row => {
+    const fn = toTitleCase(String(getCol(row, 'FName', 'First Name', 'FirstName') || '').trim());
+    const ln = toTitleCase(String(getCol(row, 'LName', 'Last Name', 'LastName') || '').trim());
+    row._fn = fn; row._ln = ln;
+    if (!fn || !ln) return;
+    const key = fn + '|' + ln;
+    const mgr = toTitleCase(String(getCol(row, 'Direct Manager', 'DirectManager', 'Manager') || '').trim());
+    const d = new Date(String(getCol(row, 'Date') || '').trim());
+    const st = stats[key] || (stats[key] = { fn, ln, mgrs: new Set(), min: Infinity, max: -Infinity, src: new Set() });
+    if (mgr) st.mgrs.add(mgr);
+    st.src.add(row._source || 'Internal');
+    if (!isNaN(d)) { const t = d.getTime(); if (t < st.min) st.min = t; if (t > st.max) st.max = t; }
+  });
+
+  const remap = {}; // "oldKey" -> "newKey"
+  Object.entries(NAME_ALIASES).forEach(([from, to]) => { remap[toTitleCase(from)] = toTitleCase(to); });
+
+  const DAY = 86400000, MAX_GAP = 31 * DAY;
+  const list = Object.entries(stats);
+  list.forEach(([kExt, ext]) => {
+    if (remap[kExt] || ext.src.size !== 1 || !ext.src.has('External')) return;
+    list.forEach(([kInt, int]) => {
+      if (kInt === kExt || remap[kExt]) return;
+      if (int.src.size !== 1 || !int.src.has('Internal')) return;
+      if (int.ln.toLowerCase() !== ext.ln.toLowerCase()) return;
+      if (![...ext.mgrs].some(m => int.mgrs.has(m))) return;
+      const gap = int.min - ext.max;
+      if (gap < -DAY || gap > MAX_GAP) return; // must start right after the external period ends
+      remap[kExt] = kInt;
+    });
+  });
+
+  const merged = [];
+  rows.forEach(row => {
+    const k = row._fn + '|' + row._ln;
+    if (remap[k] && remap[k] !== k) { const [nf, nl] = remap[k].split('|'); row._fn = nf; row._ln = nl; }
+  });
+  Object.entries(remap).forEach(([a, b]) => { if (a !== b) merged.push(a.replace('|', ' ') + ' → ' + b.replace('|', ' ')); });
+  if (merged.length) console.info('[consolidatePeople] merged:', merged);
+  window._mergedPeople = merged;
+}
+
 function buildTeamsFromData(rawRows) {
   // rawRows: parsed CSV rows with FName, LName, "Direct Manager" populated
   const mgrMap = {}; // "Mgr Full Name" -> Set("fn|ln")
@@ -507,8 +573,7 @@ function buildTeamsFromData(rawRows) {
   // Track which source(s) contributed rows for each manager
   const mgrSources = {}; // mgr -> Set of sources ('Internal','External')
   for (const row of rawRows) {
-    const fn = toTitleCase(String(getCol(row, 'FName', 'First Name', 'FirstName') || '').trim());
-    const ln = toTitleCase(String(getCol(row, 'LName', 'Last Name', 'LastName') || '').trim());
+    const [fn, ln] = rowName(row);
     const mgrRaw = String(getCol(row, 'Direct Manager', 'DirectManager', 'Manager') || '').trim();
     // Normalize manager name to Title Case so "RADNEVA YOANA" and "Radneva Yoana" merge
     const mgr = toTitleCase(mgrRaw);
@@ -694,6 +759,8 @@ function parseXLSX(file) {
 
 // ─── DATA PROCESSING ────────────────────────────────────────────────────────
 function processData(rows) {
+  // STEP 0: merge people who moved from Outsourcing to Ipsos (new ID / spelling)
+  consolidatePeople(rows);
   // STEP 1: Build TEAMS dynamically from Direct Manager column
   buildTeamsFromData(rows);
   if (TEAMS.length === 0) {
@@ -705,8 +772,7 @@ function processData(rows) {
   // STEP 2: Parse rows into allData
   allData = [];
   for (const row of rows) {
-    const fn = toTitleCase(String(getCol(row, 'FName', 'First Name', 'FirstName') || '').trim());
-    const ln = toTitleCase(String(getCol(row, 'LName', 'Last Name', 'LastName') || '').trim());
+    const [fn, ln] = rowName(row);
     const key = fn + '|' + ln;
     if (!allPersonKeys.has(key)) continue;
     const dateStr = String(getCol(row, 'Date') || '').trim();
@@ -751,6 +817,12 @@ function processData(rows) {
   activePerson = null;
 
   buildMonthFilters([...ymSet].sort());
+  const _mn = document.getElementById('merge-notice');
+  if (_mn) {
+    const mp = window._mergedPeople || [];
+    _mn.style.display = mp.length ? 'block' : 'none';
+    _mn.innerHTML = mp.length ? '<strong>Merged (Outsourcing → Ipsos):</strong> ' + mp.join(' · ') : '';
+  }
   buildHierarchySelect();
   buildTeamFilters();
   update();
