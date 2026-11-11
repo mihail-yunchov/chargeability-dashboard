@@ -238,7 +238,6 @@
 <div id="tooltip-box" class="tooltip-box"></div>
 
 <div id="dashboard">
-  <div id="merge-notice" style="display:none;margin:0 0 12px;padding:8px 12px;border:1px solid rgba(96,165,250,.35);background:rgba(96,165,250,.08);border-radius:8px;font-size:12px;color:#9db8e8;"></div>
 
   <!-- FILTER BAR -->
   <div class="filter-bar">
@@ -817,12 +816,6 @@ function processData(rows) {
   activePerson = null;
 
   buildMonthFilters([...ymSet].sort());
-  const _mn = document.getElementById('merge-notice');
-  if (_mn) {
-    const mp = window._mergedPeople || [];
-    _mn.style.display = mp.length ? 'block' : 'none';
-    _mn.innerHTML = mp.length ? '<strong>Merged (Outsourcing → Ipsos):</strong> ' + mp.join(' · ') : '';
-  }
   buildHierarchySelect();
   buildTeamFilters();
   update();
